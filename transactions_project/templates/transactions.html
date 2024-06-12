@@ -1,0 +1,70 @@
+{% load mathfilters %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaktor</title>
+    <style>
+        .red {
+            background-color: rgba(255, 0, 0, 0.5);
+        }
+        .green {
+            background-color: rgba(0, 255, 0, 0.5);
+        }
+        .content {
+            width: fit-content;
+            block-size: fit-content;
+            margin: auto;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+    <pre>
+Total Transactions: {{ total|intcomma }}
+Total Budget per Month: {{ total_budget|intcomma }}
+Total this year: {{ total_this_year|intcomma }}
+Total this month: {{ total_this_month|intcomma }}
+Total last month: {{ total_last_month|intcomma }}
+Total last 30 days: {{ total_last_30_days|intcomma }}
+Expense by category:    
+This calendar month:
+    </pre>
+    <table>
+        <tr>
+            <th>Category</th>
+            <th>Spent</th>
+            <th>Budget</th>
+            <th>Remaining</th>
+        </tr>
+        {% for category, spent in expense_by_category_this_month.items %}
+        <tr>
+            <td>{{ category }}</td>
+            <td>{{ spent|intcomma }}</td>
+            <td>{{ category.budget|intcomma }}</td>
+            <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">{{ category.budget | add:spent | intcomma}}</td>
+        </tr>
+        {% endfor %}
+Last calendar month:
+<table>
+    <tr>
+        <th>Category</th>
+        <th>Spent</th>
+        <th>Budget</th>
+        <th>Remaining</th>
+    </tr>
+    {% for category, spent in expense_by_category_last_month.items %}
+    <tr>
+        <td>{{ category }}</td>
+        <td>{{ spent|intcomma }}</td>
+        <td>{{ category.budget|intcomma }}</td>
+        <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">{{ category.budget | add:spent |intcomma}}</td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+</body>
+</html>
