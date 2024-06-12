@@ -1,0 +1,2 @@
+# transaktor
+Django Expense Tracker
