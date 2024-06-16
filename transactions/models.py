@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Length
 
 class Transaction(models.Model):
     id = models.CharField(max_length=250, primary_key=True)
@@ -11,9 +12,11 @@ class Transaction(models.Model):
         return f"{self.date} - {self.description} - {self.amount}"
 
     def save(self, *args, **kwargs):
+        # Check if association of previous transaction exists to categorize it 
         try:
             previous_category = Transaction.objects.filter(description__icontains=self.description)[1]
             if previous_category and previous_category.category:
+                print("previous category found")
                 self.category = previous_category.category
             else:
                 for association in Association.objects.all():
@@ -22,6 +25,19 @@ class Transaction(models.Model):
                         break
         except:
             pass
+        
+        # check if this is a duplicated transaction, delete the old one and update the new one
+
+        try:
+            old_transaction = Transaction.objects.filter(description__icontains=self.description.split(" ")[0], amount=self.amount, date=self.date).order_by(Length('description').desc())[1]
+            if old_transaction:
+                print("Duplicated transaction found")
+                associated_category = old_transaction.category
+                self.category = associated_category
+                old_transaction.delete()
+        except Exception as e:
+            print(e)
+
         super(Transaction, self).save(*args, **kwargs)
 
 class Association(models.Model):

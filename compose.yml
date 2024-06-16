@@ -13,8 +13,8 @@ services:
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
-    # volumes:
-    #   - .:/code
+    volumes:
+      - .:/code
     ports:
       - "7346:8000"
     depends_on:
