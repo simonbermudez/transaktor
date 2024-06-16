@@ -24,15 +24,15 @@
 <body>
     <div class="content">
     <pre>
-Total Transactions: {{ total|intcomma }}
-Total Budget per Month: {{ total_budget|intcomma }}
-Total this year: {{ total_this_year|intcomma }}
-Total this month: {{ total_this_month|intcomma }}
-Total last month: {{ total_last_month|intcomma }}
-Total last 30 days: {{ total_last_30_days|intcomma }}
+Total Transactions: ${{ total|intcomma }}
+Total Budget per Month: ${{ total_budget|intcomma }}
+Total this year: ${{ total_this_year|intcomma }}
+Total this month: ${{ total_this_month|intcomma }}
+Total last month: ${{ total_last_month|intcomma }}
+Total last 30 days: ${{ total_last_30_days|intcomma }}
 Expense by category:    
+</pre>
 This calendar month:
-    </pre>
     <table>
         <tr>
             <th>Category</th>
@@ -43,11 +43,12 @@ This calendar month:
         {% for category, spent in expense_by_category_this_month.items %}
         <tr>
             <td>{{ category }}</td>
-            <td>{{ spent|intcomma }}</td>
-            <td>{{ category.budget|intcomma }}</td>
-            <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">{{ category.budget | add:spent | intcomma}}</td>
+            <td>${{ spent|intcomma }}</td>
+            <td>${{ category.budget|intcomma }}</td>
+            <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
         </tr>
         {% endfor %}
+    </table>
 Last calendar month:
 <table>
     <tr>
@@ -59,9 +60,9 @@ Last calendar month:
     {% for category, spent in expense_by_category_last_month.items %}
     <tr>
         <td>{{ category }}</td>
-        <td>{{ spent|intcomma }}</td>
-        <td>{{ category.budget|intcomma }}</td>
-        <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">{{ category.budget | add:spent |intcomma}}</td>
+        <td>${{ spent|intcomma }}</td>
+        <td>${{ category.budget|intcomma }}</td>
+        <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent |intcomma}}</td>
     </tr>
     {% endfor %}
 </table>
