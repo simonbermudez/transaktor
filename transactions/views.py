@@ -6,6 +6,13 @@ from .serializers import TransactionSerializer
 from rest_framework import generics
 from django.shortcuts import render 
 from datetime import datetime, timedelta
+
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+
+
+from collections import Counter
+
 # create an html view that will list all transactions
 def transactions(request):
     transactions = Transaction.objects.filter(amount__lt=0).order_by('-date')
@@ -24,6 +31,15 @@ def transactions(request):
     }
     return render(request, 'transactions.html', context)
 
+@api_view(('GET',))
+def category_tokens(request):
+    categories = Category.objects.all()
+    tokens = {}
+    for category in categories:
+        tokens[category.name] = dict(Counter((" ".join([t.description for t in category.transactions.all()]).split(" "))).most_common())
+
+    # json response 
+    return Response(tokens)
 
 class TransactionListView(generics.ListAPIView):
     queryset = Transaction.objects.all()
@@ -45,5 +61,6 @@ def create_transactions(request):
     serializer = TransactionSerializer(data=new_transactions_data, many=True)
     if serializer.is_valid():
         serializer.save()
+        Transaction.remove_duplicates()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

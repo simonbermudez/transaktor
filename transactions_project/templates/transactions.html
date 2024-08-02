@@ -39,6 +39,7 @@ This calendar month:
             <th>Spent</th>
             <th>Budget</th>
             <th>Remaining</th>
+            <th>Average</th>
         </tr>
         {% for category, spent in expense_by_category_this_month.items %}
         <tr>
@@ -46,6 +47,7 @@ This calendar month:
             <td>${{ spent|intcomma }}</td>
             <td>${{ category.budget|intcomma }}</td>
             <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
+            <td>${{ category.average_amount_this_month | intcomma }}</td>
         </tr>
         {% endfor %}
     </table>
