@@ -10,10 +10,13 @@ from datetime import datetime, timedelta
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 
+from django.contrib.auth.decorators import login_required
 
 from collections import Counter
 
 # create an html view that will list all transactions
+# require login to access this view
+@login_required
 def transactions(request):
     transactions = Transaction.objects.filter(amount__lt=0).order_by('-date')
     categories = Category.objects.all().order_by('name')
