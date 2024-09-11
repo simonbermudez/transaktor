@@ -18,7 +18,7 @@ from collections import Counter
 # require login to access this view
 @login_required
 def transactions(request):
-    transactions = Transaction.objects.filter(amount__lt=0).order_by('-date')
+    transactions = Transaction.objects.filter(amount__lt=0, category__visible=True).order_by('-date')
     categories = Category.objects.all().order_by('name')
     context = {
         'transactions': transactions,
@@ -48,8 +48,28 @@ class TransactionListView(generics.ListAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
 
+
 @api_view(['POST'])
 def create_transactions(request):
+    transactions = request.data
+    if not isinstance(transactions, list):
+        return Response({"error": "Expected a list of transactions"}, status=status.HTTP_400_BAD_REQUEST)
+
+    transactions = map(lambda t: Transaction(**t), transactions)
+
+    result = Transaction.objects.bulk_create(
+        transactions, 
+        update_conflicts=True,
+        update_fields=['description', 'amount', 'metadata'],
+        unique_fields=['id']
+    )
+
+    Transaction.remove_duplicates()
+
+    return Response({"message": f"{len(result)} transactions created"}, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+def create_transactions_original(request):
     if not isinstance(request.data, list):
         return Response({"error": "Expected a list of transactions"}, status=status.HTTP_400_BAD_REQUEST)
 

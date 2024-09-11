@@ -9,7 +9,8 @@ class Transaction(models.Model):
     description = models.TextField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, related_name='transactions', null=True, blank=True)
-
+    metadata = models.JSONField(null=True, blank=True)
+    
     # Function that removes duplicates from the database
     @staticmethod
     def remove_duplicates():
@@ -98,6 +99,7 @@ class Association(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=100, primary_key=True)
     budget = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    visible = models.BooleanField(default=True)
 
     def average_amount(self, filter={}):
         return int(self.transactions.filter(**filter).aggregate(models.Avg("amount"))["amount__avg"])

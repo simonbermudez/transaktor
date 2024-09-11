@@ -42,13 +42,15 @@ This calendar month:
             <th>Average</th>
         </tr>
         {% for category, spent in expense_by_category_this_month.items %}
-        <tr>
-            <td>{{ category }}</td>
-            <td>${{ spent|intcomma }}</td>
-            <td>${{ category.budget|intcomma }}</td>
-            <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
-            <td>${{ category.average_amount_this_month | intcomma }}</td>
-        </tr>
+            {% if category.visible %}
+                <tr>
+                    <td>{{ category }}</td>
+                    <td>${{ spent|intcomma }}</td>
+                    <td>${{ category.budget|intcomma }}</td>
+                    <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
+                    <td>${{ category.average_amount_this_month | intcomma }}</td>
+                </tr>
+            {% endif %}
         {% endfor %}
     </table>
 Last calendar month:
@@ -60,12 +62,14 @@ Last calendar month:
         <th>Remaining</th>
     </tr>
     {% for category, spent in expense_by_category_last_month.items %}
-    <tr>
-        <td>{{ category }}</td>
-        <td>${{ spent|intcomma }}</td>
-        <td>${{ category.budget|intcomma }}</td>
-        <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent |intcomma}}</td>
-    </tr>
+        {% if category.visible %}
+            <tr>
+                <td>{{ category }}</td>
+                <td>${{ spent|intcomma }}</td>
+                <td>${{ category.budget|intcomma }}</td>
+                <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent |intcomma}}</td>
+            </tr>
+        {% endif %}
     {% endfor %}
 </table>
 </div>
