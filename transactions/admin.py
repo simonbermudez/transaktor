@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import *
 from djangoql.admin import DjangoQLSearchMixin
-
+from django.db.models import JSONField
+from django_json_widget.widgets import JSONEditorWidget
 
 class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ('date', 'description', 'amount', 'category')
@@ -9,6 +10,10 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ('date', 'category')
     list_editable = ('category',)
     autocomplete_fields = ('category',)
+
+    formfield_overrides = {
+        JSONField: {'widget': JSONEditorWidget},
+    }
 
 class CategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ('name', 'budget')

@@ -47,18 +47,14 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.date} - {self.description} - {self.amount}"
 
-    def save(self, *args, **kwargs):
-        # If check=False skip the categorization
-        if kwargs.get("check") == False or self.category:
-            print("Skipping Checks")
-            super(Transaction, self).save()
-            return
+
+    def check_previous_transaction_category(self):
         # Check if association of previous transaction exists to categorize it 
         try:
-            previous_category = Transaction.objects.filter(description__icontains=self.description.split(" ")[0])[1]
-            if previous_category and previous_category.category:
+            previous_transaction = Transaction.objects.filter(description__icontains=self.description.split(" ")[0])[1]
+            if previous_transaction and previous_transaction.category:
                 print("previous category found")
-                self.category = previous_category.category
+                self.category = previous_transaction.category
             else:
                 for association in Association.objects.all():
                     if association.keyword.lower() in self.description.lower():
@@ -78,6 +74,15 @@ class Transaction(models.Model):
                 old_transaction.delete()
         except Exception as e:
             print(e)
+
+    def save(self, *args, **kwargs):
+        # If check=False skip the categorization
+        if kwargs.get("check") == False or self.category:
+            print("Skipping Checks")
+            super(Transaction, self).save()
+            return
+
+        self.check_previous_transaction_category()
 
         super(Transaction, self).save()
 

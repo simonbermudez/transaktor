@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djangoql',
+    'massadmin',
+    'django_json_widget',
     'transactions',
     'rest_framework',
     'corsheaders',

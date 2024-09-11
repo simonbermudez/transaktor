@@ -6,6 +6,7 @@ admin.site.site_title = "Transaktor Admin Portal"
 admin.site.index_title = "Welcome to Transaktor Portal"
 
 urlpatterns = [
+    path('admin/', include('massadmin.urls')),
     path('admin/', admin.site.urls),
     path('', include('transactions.urls')),
 ]

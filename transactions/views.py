@@ -48,42 +48,41 @@ class TransactionListView(generics.ListAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
 
-
 @api_view(['POST'])
 def create_transactions(request):
-    transactions = request.data
-    if not isinstance(transactions, list):
-        return Response({"error": "Expected a list of transactions"}, status=status.HTTP_400_BAD_REQUEST)
-
-    transactions = map(lambda t: Transaction(**t), transactions)
-
-    result = Transaction.objects.bulk_create(
-        transactions, 
-        update_conflicts=True,
-        update_fields=['description', 'amount', 'metadata'],
-        unique_fields=['id']
-    )
-
-    Transaction.remove_duplicates()
-
-    return Response({"message": f"{len(result)} transactions created"}, status=status.HTTP_201_CREATED)
-
-@api_view(['POST'])
-def create_transactions_original(request):
     if not isinstance(request.data, list):
         return Response({"error": "Expected a list of transactions"}, status=status.HTTP_400_BAD_REQUEST)
 
-    existing_ids = set(Transaction.objects.values_list('id', flat=True))
-    new_transactions_data = [transaction for transaction in request.data if transaction['id'] not in existing_ids]
-    new_transactions_data = [dict(t) for t in {tuple(d.items()) for d in new_transactions_data}]
+    # Assuming 'id' is a unique identifier in each transaction
+    transaction_ids = [transaction['id'] for transaction in request.data]
+    existing_transactions = Transaction.objects.filter(id__in=transaction_ids)
+    existing_ids = set(existing_transactions.values_list('id', flat=True))
 
+    # Filter out the new transactions that don't already exist
+    new_transactions_data = [transaction for transaction in request.data if transaction['id'] not in existing_ids]
 
     if not new_transactions_data:
         return Response({"message": "All transactions already exist"}, status=status.HTTP_200_OK)
 
-    serializer = TransactionSerializer(data=new_transactions_data, many=True)
-    if serializer.is_valid():
-        serializer.save()
-        Transaction.remove_duplicates()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    successful_transactions = []
+    failed_transactions = []
+
+    # Serialize and save each transaction individually
+    for transaction_data in new_transactions_data:
+        serializer = TransactionSerializer(data=transaction_data)
+        if serializer.is_valid():
+            serializer.save()
+            successful_transactions.append(serializer.data)
+        else:
+            failed_transactions.append({"transaction": transaction_data, "errors": serializer.errors})
+
+    if successful_transactions:
+        return Response(
+            {
+                "created": successful_transactions,
+                "failed": failed_transactions
+            }, 
+            status=status.HTTP_201_CREATED if not failed_transactions else status.HTTP_207_MULTI_STATUS
+        )
+    else:
+        return Response({"errors": failed_transactions}, status=status.HTTP_400_BAD_REQUEST)
