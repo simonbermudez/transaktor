@@ -16,9 +16,9 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     }
 
 class CategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    list_display = ('name', 'budget')
+    list_display = ('name', 'visible', 'budget')
     search_fields = ('name', 'budget')
-    list_editable = ('budget',)
+    list_editable = ('budget', 'visible')
     list_filter = ('budget', )
     search_fields = ('name',)
 

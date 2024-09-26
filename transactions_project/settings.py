@@ -26,7 +26,8 @@ SECRET_KEY = '=gjz2!u_&8qcvzq$5*ojg&sam)+iyqbe-!t&p5+p^8gm13lx@r'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "transaktor.bermudez.ca"
+    "transaktor.bermudez.ca",
+    "192.168.2.227",
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://transaktor.bermudez.ca']
