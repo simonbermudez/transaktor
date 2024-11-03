@@ -10,6 +10,7 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ('date', 'category')
     list_editable = ('category',)
     autocomplete_fields = ('category',)
+    ordering = ('-date',)
 
     formfield_overrides = {
         JSONField: {'widget': JSONEditorWidget},
