@@ -21,10 +21,16 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.description[:50]} - {self.amount}"
+    
+    @classmethod
+    def cleanup(cls):
+        cls.remove_duplicates()
+        cls.remove_old_pending_transactions()
 
     @classmethod
     def remove_duplicates(cls):
         unique_dates = cls.objects.dates('date', 'day').distinct()
+        duplicates = 0
         
         for date in unique_dates:
             duplicates = (
@@ -36,6 +42,7 @@ class Transaction(models.Model):
             )
             
             for duplicate in duplicates:
+                duplicates += 1
                 transactions = cls.objects.filter(
                     date=date,
                     amount=duplicate['amount']
@@ -46,6 +53,14 @@ class Transaction(models.Model):
                     longer.category = shorter.category
                     longer.save(update_fields=['category'])
                     shorter.delete()
+        return duplicates
+
+
+    @classmethod
+    def remove_old_pending_transactions(cls, older_than_days: int = 5):
+        old_pending_transactions = cls.objects.filter(metadata__status="PENDING", date__lt=timezone.now() - timezone.timedelta(days=older_than_days))
+        old_pending_transactions.delete()
+        return old_pending_transactions
 
     def check_previous_transaction_category(self):
         first_word = self.description.split()[0].lower()

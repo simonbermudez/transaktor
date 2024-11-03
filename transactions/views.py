@@ -76,7 +76,7 @@ def create_transactions(request):
         else:
             failed_transactions.append({"transaction": transaction_data, "errors": serializer.errors})
 
-    Transaction.remove_duplicates()
+    Transaction.cleanup()
     
     if successful_transactions:
         return Response(
