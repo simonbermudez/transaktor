@@ -24,11 +24,15 @@ class CategoryListFilter(SimpleListFilter):
 
     def lookups(self, request, model_admin):
         categories = Category.objects.order_by('name')
-        return [(c.name, c.name) for c in categories]
+        choices = [(c.name, c.name) for c in categories]
+        choices.insert(0, ('None', 'No Category'))
+        return choices
 
     def queryset(self, request, queryset):
-        if self.value():
-            return queryset.filter(category_id=self.value())
+        if self.value() == 'None':
+            return queryset.filter(category__isnull=True)
+        elif self.value():
+            return queryset.filter(category=self.value())
         return queryset
 
 class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
