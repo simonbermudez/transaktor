@@ -30,7 +30,7 @@ class Transaction(models.Model):
     @classmethod
     def remove_duplicates(cls):
         unique_dates = cls.objects.dates('date', 'day').distinct()
-        duplicates = 0
+        duplicates_count = 0
         
         for date in unique_dates:
             duplicates = (
@@ -42,7 +42,7 @@ class Transaction(models.Model):
             )
             
             for duplicate in duplicates:
-                duplicates += 1
+                duplicates_count += 1
                 transactions = cls.objects.filter(
                     date=date,
                     amount=duplicate['amount']
@@ -53,7 +53,7 @@ class Transaction(models.Model):
                     longer.category = shorter.category
                     longer.save(update_fields=['category'])
                     shorter.delete()
-        return duplicates
+        return duplicates_count
 
 
     @classmethod
