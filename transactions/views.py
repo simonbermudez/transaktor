@@ -24,12 +24,12 @@ def transactions(request):
         'transactions': transactions,
         'categories': categories,
         'total_last_30_days': sum([transaction.amount for transaction in transactions if transaction.date >= datetime.now().date() - timedelta(days=30)]),
-        'total_last_month': sum([transaction.amount for transaction in transactions if transaction.date.month == datetime.now().month - 1]),
-        'total_this_month': sum([transaction.amount for transaction in transactions if transaction.date.month == datetime.now().month]), 
+        'total_last_month': sum([transaction.amount for transaction in transactions if transaction.date.month == (datetime.now().replace(day=1) - timedelta(days=1)).month and transaction.date.year == (datetime.now().replace(day=1) - timedelta(days=1)).year]),
+        'total_this_month': sum([transaction.amount for transaction in transactions if transaction.date.month == datetime.now().month and transaction.date.year == datetime.now().year]), 
         'total_this_year': sum([transaction.amount for transaction in transactions if transaction.date.year == datetime.now().year]),
         'total': sum([transaction.amount for transaction in transactions]),
-        'expense_by_category_this_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == datetime.now().month]) for category in categories},
-        'expense_by_category_last_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == datetime.now().month - 1]) for category in categories},
+        'expense_by_category_this_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == datetime.now().month and transaction.date.year == datetime.now().year]) for category in categories},
+        'expense_by_category_last_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == (datetime.now().replace(day=1) - timedelta(days=1)).month and transaction.date.year == (datetime.now().replace(day=1) - timedelta(days=1)).year]) for category in categories},
         'total_budget': sum([category.budget for category in categories])
     }
     return render(request, 'transactions.html', context)
