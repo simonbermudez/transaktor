@@ -159,6 +159,45 @@ def transactions(request):
             'rate': round(float(savings_rate), 1)
         })
 
+    # 6. Category Spending Trends - Last 12 months
+    category_trends = []
+    month_labels = []
+    
+    # Get all visible categories
+    visible_categories = [category for category in categories if category.visible]
+    
+    # Get the last 12 months
+    for i in range(11, -1, -1):
+        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_labels.append(month_date.strftime('%b %Y'))
+    
+    # For each category, get monthly spending for last 12 months
+    for category in visible_categories:
+        monthly_amounts = []
+        for i in range(11, -1, -1):
+            month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+            month_expense = sum([
+                transaction.amount 
+                for transaction in transactions 
+                if transaction.category == category
+                and transaction.date.month == month_date.month 
+                and transaction.date.year == month_date.year
+            ])
+            monthly_amounts.append(float(abs(month_expense)))
+        
+        # Only include categories that have some spending in the last 12 months
+        if sum(monthly_amounts) > 0:
+            category_trends.append({
+                'category': str(category),
+                'data': monthly_amounts
+            })
+    
+    # Sort categories by total spending (descending)
+    category_trends.sort(key=lambda x: sum(x['data']), reverse=True)
+    
+    # Limit to top 8 categories to avoid overcrowding the chart
+    category_trends = category_trends[:8]
+
     context = {
         'transactions': transactions,
         'categories': categories,
@@ -177,7 +216,9 @@ def transactions(request):
         'budget_vs_actual': json.dumps(budget_vs_actual, cls=DecimalEncoder),
         'daily_spending': json.dumps(daily_spending, cls=DecimalEncoder),
         'top_expenses': json.dumps(top_expenses, cls=DecimalEncoder),
-        'savings_data': json.dumps(savings_data, cls=DecimalEncoder)
+        'savings_data': json.dumps(savings_data, cls=DecimalEncoder),
+        'category_trends': json.dumps(category_trends, cls=DecimalEncoder),
+        'month_labels': json.dumps(month_labels)
     }
     return render(request, 'transactions.html', context)
 

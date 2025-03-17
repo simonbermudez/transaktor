@@ -175,7 +175,23 @@
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="text-center mb-4">Transaktor Dashboard</h1>
+        <h1 class="mb-4">Transaktor Dashboard</h1>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="section-title mb-0">{{ selected_month_name }} Overview</h3>
+                    <div class="month-picker">
+                        <label for="month-selector" class="form-label me-2">Select Month:</label>
+                        <select id="month-selector" class="form-select" style="min-width: 200px;" onchange="window.location.href='?month=' + this.value">
+                            {% for month in months %}
+                                <option value="{{ month.value }}" {% if month.value == selected_date %}selected{% endif %}>
+                                    {{ month.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
         
         <div class="stats-grid">
             <div class="stat-item">
@@ -183,7 +199,7 @@
                 <div class="value">${{ total_budget|intcomma }}</div>
             </div>
             <div class="stat-item">
-                <h6>Total This Year</h6>
+                <h6>Total This Calendar Year</h6>
                 <div class="value">${{ total_this_year|intcomma }}</div>
             </div>
             <div class="stat-item">
@@ -201,7 +217,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Monthly Expense Distribution</h5>
-                        <div style="height: 300px;">
+                        <div style="height: 400px; position: relative;">
                             <canvas id="expense_by_category_chart"></canvas>
                         </div>
                     </div>
@@ -265,16 +281,22 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Category Spending Trends (12 Months)</h5>
+                        <div style="height: 400px; position: relative;">
+                            <canvas id="category_trends_chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="table-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">Monthly Categories - {{ selected_month_name }}</h3>
-                <select class="month-selector" onchange="window.location.href='?month=' + this.value">
-                    {% for month in months %}
-                        <option value="{{ month.value }}" {% if month.value == selected_date %}selected{% endif %}>
-                            {{ month.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <h3 class="section-title mb-0">Monthly Categories</h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover" id="categories-table">
@@ -345,7 +367,9 @@
                                 padding: 20,
                                 font: {
                                     size: 12
-                                }
+                                },
+                                boxWidth: 15,
+                                boxHeight: 15
                             }
                         },
                         title: {
@@ -353,6 +377,16 @@
                             text: 'Category Distribution',
                             font: {
                                 size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: $${value.toLocaleString()} (${percentage}%)`;
+                                }
                             }
                         }
                     }
@@ -580,6 +614,81 @@
                             callbacks: {
                                 label: function(context) {
                                     return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 6. Category Spending Trends Chart
+            var categoryTrendsCtx = document.getElementById('category_trends_chart').getContext('2d');
+            var categoryTrendsData = JSON.parse('{{ category_trends|escapejs }}');
+            var monthLabels = JSON.parse('{{ month_labels|escapejs }}');
+            
+            // Generate colors for each category
+            const categoryColors = [];
+            for (let i = 0; i < categoryTrendsData.length; i++) {
+                const hue = (i * 360 / categoryTrendsData.length) % 360;
+                categoryColors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+            }
+            
+            // Create datasets for each category
+            const categoryDatasets = categoryTrendsData.map((category, index) => {
+                return {
+                    label: category.category,
+                    data: category.data,
+                    borderColor: categoryColors[index],
+                    backgroundColor: categoryColors[index].replace('0.8', '0.1'),
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3
+                };
+            });
+            
+            new Chart(categoryTrendsCtx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: categoryDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' + context.raw.toLocaleString();
                                 }
                             }
                         }
