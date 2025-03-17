@@ -5,45 +5,179 @@ from .models import *
 from .serializers import TransactionSerializer
 from rest_framework import generics
 from django.shortcuts import render 
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, date
+import calendar
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-
 from django.contrib.auth.decorators import login_required
-
 from collections import Counter
 import json
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth, TruncDay
+from decimal import Decimal
 
-# create an html view that will list all transactions
-# require login to access this view
+# Custom JSON encoder to handle Decimal objects
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
 @login_required
 def transactions(request):
+    selected_date = request.GET.get('month')
+    if selected_date:
+        selected_date = datetime.strptime(selected_date, '%Y-%m')
+    else:
+        selected_date = datetime.now()
+
+    # Get last 12 months for the dropdown
+    months = []
+    for i in range(12):
+        date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        months.append({
+            'value': date.strftime('%Y-%m'),
+            'label': date.strftime('%B %Y')
+        })
+
     transactions = Transaction.objects.filter(amount__lt=0, category__visible=True).order_by('-date')
     categories = Category.objects.all().order_by('name')
-    this_year_expenses_by_category = {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.year == datetime.now().year]) for category in categories if category.visible}
-    # Sort expenses by absolute value in descending order
-    this_year_expenses_by_category = dict(sorted(this_year_expenses_by_category.items(), key=lambda x: abs(x[1]), reverse=True))
-    
-    visible_categories = [category for category in this_year_expenses_by_category.keys() if category.visible]
-    chart_data = json.dumps({
+
+    # Calculate expenses for selected month
+    selected_month_expenses = {
+        category: sum([
+            transaction.amount 
+            for transaction in transactions 
+            if transaction.category == category 
+            and transaction.date.month == selected_date.month 
+            and transaction.date.year == selected_date.year
+        ]) 
+        for category in categories
+    }
+
+    # Prepare monthly chart data
+    visible_categories = [category for category in categories if category.visible]
+    monthly_chart_data = {
         'labels': [str(category) for category in visible_categories],
-        'values': [float(abs(this_year_expenses_by_category[category])) for category in visible_categories]
-    })
+        'values': [float(abs(selected_month_expenses[category])) for category in visible_categories]
+    }
     
+    # Sort categories by expense amount for the chart
+    combined = list(zip(monthly_chart_data['labels'], monthly_chart_data['values']))
+    combined.sort(key=lambda x: x[1], reverse=True)
+    monthly_chart_data['labels'], monthly_chart_data['values'] = zip(*combined) if combined else ([], [])
+
+    # Calculate average daily spending for selected month
+    days_in_month = calendar.monthrange(selected_date.year, selected_date.month)[1]
+    for category in categories:
+        if category.visible:
+            total_spent = abs(selected_month_expenses[category])
+            category.average_amount_this_month = float(total_spent) / days_in_month
+
+    # 1. Spending Trend Graph - Last 12 months
+    trend_data = []
+    for i in range(11, -1, -1):
+        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_expenses = sum([
+            transaction.amount 
+            for transaction in transactions 
+            if transaction.date.month == month_date.month 
+            and transaction.date.year == month_date.year
+        ])
+        trend_data.append({
+            'month': month_date.strftime('%b %Y'),
+            'amount': float(abs(month_expenses))
+        })
+    
+    # 2. Budget vs Actual Graph
+    budget_vs_actual = []
+    for category in visible_categories:
+        if category.budget > 0:  # Only include categories with a budget
+            budget_vs_actual.append({
+                'category': str(category),
+                'budget': float(category.budget),
+                'actual': float(abs(selected_month_expenses[category]))
+            })
+    # Sort by budget amount
+    budget_vs_actual.sort(key=lambda x: x['budget'], reverse=True)
+    
+    # 3. Daily Spending Graph for selected month
+    daily_spending = []
+    start_date = selected_date.replace(day=1)
+    end_date = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    current_date = start_date
+    
+    while current_date <= end_date:
+        day_expenses = sum([
+            transaction.amount 
+            for transaction in transactions 
+            if transaction.date == current_date.date()
+        ])
+        daily_spending.append({
+            'date': current_date.strftime('%d'),
+            'amount': float(abs(day_expenses))
+        })
+        current_date += timedelta(days=1)
+    
+    # 4. Top 5 Expenses
+    top_expenses = []
+    for category in visible_categories:
+        expense = abs(selected_month_expenses[category])
+        if expense > 0:
+            top_expenses.append({
+                'category': str(category),
+                'amount': float(expense)
+            })
+    top_expenses.sort(key=lambda x: x['amount'], reverse=True)
+    top_expenses = top_expenses[:5]  # Get only top 5
+    
+    # 5. Savings Rate Graph
+    income_transactions = Transaction.objects.filter(amount__gt=0).order_by('-date')
+    savings_data = []
+    
+    for i in range(5, -1, -1):
+        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_income = sum([
+            transaction.amount 
+            for transaction in income_transactions 
+            if transaction.date.month == month_date.month 
+            and transaction.date.year == month_date.year
+        ])
+        month_expenses = abs(sum([
+            transaction.amount 
+            for transaction in transactions 
+            if transaction.date.month == month_date.month 
+            and transaction.date.year == month_date.year
+        ]))
+        
+        savings_rate = 0
+        if month_income > 0:
+            savings_rate = ((month_income - month_expenses) / month_income) * 100
+            
+        savings_data.append({
+            'month': month_date.strftime('%b %Y'),
+            'rate': round(float(savings_rate), 1)
+        })
+
     context = {
         'transactions': transactions,
         'categories': categories,
         'total_last_30_days': sum([transaction.amount for transaction in transactions if transaction.date >= datetime.now().date() - timedelta(days=30)]),
-        'total_last_month': sum([transaction.amount for transaction in transactions if transaction.date.month == (datetime.now().replace(day=1) - timedelta(days=1)).month and transaction.date.year == (datetime.now().replace(day=1) - timedelta(days=1)).year]),
-        'total_this_month': sum([transaction.amount for transaction in transactions if transaction.date.month == datetime.now().month and transaction.date.year == datetime.now().year]), 
+        'total_this_month': sum([transaction.amount for transaction in transactions if transaction.date.month == selected_date.month and transaction.date.year == selected_date.year]), 
         'total_this_year': sum([transaction.amount for transaction in transactions if transaction.date.year == datetime.now().year]),
         'total': sum([transaction.amount for transaction in transactions]),
-        'expense_by_category_this_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == datetime.now().month and transaction.date.year == datetime.now().year]) for category in categories},
-        'expense_by_category_last_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == (datetime.now().replace(day=1) - timedelta(days=1)).month and transaction.date.year == (datetime.now().replace(day=1) - timedelta(days=1)).year]) for category in categories},
+        'expense_by_category': selected_month_expenses,
         'total_budget': sum([category.budget for category in categories]),
-        'this_year_expenses_by_category': this_year_expenses_by_category,
-        'chart_data': chart_data
+        'chart_data': json.dumps(monthly_chart_data, cls=DecimalEncoder),
+        'months': months,
+        'selected_date': selected_date.strftime('%Y-%m'),
+        'selected_month_name': selected_date.strftime('%B %Y'),
+        # New graph data
+        'trend_data': json.dumps(trend_data, cls=DecimalEncoder),
+        'budget_vs_actual': json.dumps(budget_vs_actual, cls=DecimalEncoder),
+        'daily_spending': json.dumps(daily_spending, cls=DecimalEncoder),
+        'top_expenses': json.dumps(top_expenses, cls=DecimalEncoder),
+        'savings_data': json.dumps(savings_data, cls=DecimalEncoder)
     }
     return render(request, 'transactions.html', context)
 
