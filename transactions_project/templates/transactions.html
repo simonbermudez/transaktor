@@ -387,6 +387,22 @@
             color: white;
         }
         
+        /* Logo styling */
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo {
+            height: 60px;
+            margin-right: 15px;
+            transition: filter 0.3s ease;
+        }
+        
+        .dark-mode .logo {
+            filter: invert(1);
+        }
+        
         /* Dark mode toggle switch */
         .theme-switch-wrapper {
             display: flex;
@@ -443,15 +459,44 @@
             margin: 5px;
             font-size: 18px;
         }
+        
+        /* Header layout */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .logo-container {
+            flex: 1;
+        }
+        
+        .title-container {
+            flex: 2;
+            text-align: center;
+        }
+        
+        .controls-container {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
     <div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2">Transaktor Dashboard</h1>
-            <div class="d-flex align-items-center">
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="https://simonbermudez.com/logo.png" alt="Transaktor Logo" class="logo">
+            </div>
+            <div class="title-container">
+                <h1 class="h2 mb-0 mx-auto">Transaktor Dashboard</h1>
+            </div>
+            <div class="controls-container">
                 <a href="/admin/" class="btn btn-sm btn-outline-primary me-3">
                     <i class="bi bi-gear"></i> Admin
                 </a>
@@ -602,9 +647,9 @@
                             {% if category.visible %}
                                 <tr>
                                     <td>{{ category }}</td>
-                                    <td class="{% if spent|abs >= category.budget %}spent-high{% elif spent|abs >= category.budget|mul:0.75 %}spent-medium{% elif spent|abs > 0 %}spent-low{% endif %}">${{ spent|abs|intcomma }}</td>
+                                    <td class="{% if spent|abs >= category.budget %}spent-high{% elif spent|abs >= category.budget|mul:"0.75" %}spent-medium{% elif spent|abs > 0 %}spent-low{% endif %}">${{ spent|abs|intcomma }}</td>
                                     <td class="{% if category.budget < 100 %}budget-low{% elif category.budget < 500 %}budget-medium{% else %}budget-high{% endif %}">${{ category.budget|intcomma }}</td>
-                                    <td class="{% if category.budget|add:spent < 0 %}remaining-negative{% elif category.budget|add:spent < category.budget|mul:0.25 %}remaining-low{% else %}remaining-good{% endif %}">
+                                    <td class="{% if category.budget|add:spent < 0 %}remaining-negative{% elif category.budget|add:spent < category.budget|mul:"0.25" %}remaining-low{% else %}remaining-good{% endif %}">
                                         ${{ category.budget|add:spent|intcomma}}
                                     </td>
                                     <td class="{% if category.average_amount_this_month < 5 %}average-low{% elif category.average_amount_this_month < 20 %}average-medium{% else %}average-high{% endif %}">${{ category.average_amount_this_month|floatformat:2|intcomma }}</td>
