@@ -5,73 +5,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://cdn.jsdelivr.net https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/ 'unsafe-eval' 'unsafe-inline';">
     <title>Transaktor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
         .red {
-            background-color: rgba(255, 0, 0, 0.5);
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
         }
         .green {
-            background-color: rgba(0, 255, 0, 0.5);
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
         }
-        .content {
-            width: fit-content;
-            block-size: fit-content;
-            margin: auto;
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stat-item h6 {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-item .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        table {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="content">
-    <pre>
-Total Transactions: ${{ total|intcomma }}
-Total Budget per Month: ${{ total_budget|intcomma }}
-Total this year: ${{ total_this_year|intcomma }}
-Total this month: ${{ total_this_month|intcomma }}
-Total last month: ${{ total_last_month|intcomma }}
-Total last 30 days: ${{ total_last_30_days|intcomma }}
-Expense by category:    
-</pre>
-This calendar month:
-    <table>
-        <tr>
-            <th>Category</th>
-            <th>Spent</th>
-            <th>Budget</th>
-            <th>Remaining</th>
-            <th>Average</th>
-        </tr>
-        {% for category, spent in expense_by_category_this_month.items %}
-            {% if category.visible %}
-                <tr>
-                    <td>{{ category }}</td>
-                    <td>${{ spent|intcomma }}</td>
-                    <td>${{ category.budget|intcomma }}</td>
-                    <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
-                    <td>${{ category.average_amount_this_month | floatformat:2 | intcomma }}</td>
-                </tr>
-            {% endif %}
-        {% endfor %}
-    </table>
-Last calendar month:
-<table>
-    <tr>
-        <th>Category</th>
-        <th>Spent</th>
-        <th>Budget</th>
-        <th>Remaining</th>
-    </tr>
-    {% for category, spent in expense_by_category_last_month.items %}
-        {% if category.visible %}
-            <tr>
-                <td>{{ category }}</td>
-                <td>${{ spent|intcomma }}</td>
-                <td>${{ category.budget|intcomma }}</td>
-                <td class="{% if spent|abs > category.budget %}red{%else%}green{% endif %}">${{ category.budget | add:spent |intcomma}}</td>
-            </tr>
-        {% endif %}
-    {% endfor %}
-</table>
-</div>
+    <div class="container py-4">
+        <h1 class="text-center mb-4">Financial Dashboard</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h6>Total Budget/Month</h6>
+                <div class="value">${{ total_budget|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Total This Year</h6>
+                <div class="value">${{ total_this_year|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Total This Month</h6>
+                <div class="value">${{ total_this_month|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Total Last Month</h6>
+                <div class="value">${{ total_last_month|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Last 30 Days</h6>
+                <div class="value">${{ total_last_30_days|intcomma }}</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 class="section-title">This Month's Categories</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Category</th>
+                            <th>Spent</th>
+                            <th>Budget</th>
+                            <th>Remaining</th>
+                            <th>Average</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, spent in expense_by_category_this_month.items %}
+                            {% if category.visible %}
+                                <tr>
+                                    <td>{{ category }}</td>
+                                    <td>${{ spent|intcomma }}</td>
+                                    <td>${{ category.budget|intcomma }}</td>
+                                    <td class="{% if spent|abs > category.budget %}red{% else %}green{% endif %}">${{ category.budget | add:spent | intcomma}}</td>
+                                    <td>${{ category.average_amount_this_month | floatformat:2 | intcomma }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 class="section-title">Last Month's Categories</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Category</th>
+                            <th>Spent</th>
+                            <th>Budget</th>
+                            <th>Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, spent in expense_by_category_last_month.items %}
+                            {% if category.visible %}
+                                <tr>
+                                    <td>{{ category }}</td>
+                                    <td>${{ spent|intcomma }}</td>
+                                    <td>${{ category.budget|intcomma }}</td>
+                                    <td class="{% if spent|abs > category.budget %}red{% else %}green{% endif %}">${{ category.budget | add:spent |intcomma}}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h3 class="section-title">Yearly Expense Distribution</h3>
+            <div style="height: 400px; width: 100%;">
+                <canvas id="expense_by_category_this_year"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('expense_by_category_this_year').getContext('2d');
+            var chartData = JSON.parse('{{ chart_data|escapejs }}');
+
+            function generateRandomColor() {
+                const r = Math.floor(Math.random() * 151) + 50;
+                const g = Math.floor(Math.random() * 151) + 50;
+                const b = Math.floor(Math.random() * 151) + 50;
+                return `rgb(${r}, ${g}, ${b}, 0.8)`;
+            }
+
+            const colors = chartData.labels.map(() => generateRandomColor());
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Expenses this year',
+                        data: chartData.values,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            display: true,
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

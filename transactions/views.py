@@ -13,6 +13,7 @@ from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from django.contrib.auth.decorators import login_required
 
 from collections import Counter
+import json
 
 # create an html view that will list all transactions
 # require login to access this view
@@ -20,6 +21,16 @@ from collections import Counter
 def transactions(request):
     transactions = Transaction.objects.filter(amount__lt=0, category__visible=True).order_by('-date')
     categories = Category.objects.all().order_by('name')
+    this_year_expenses_by_category = {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.year == datetime.now().year]) for category in categories if category.visible}
+    # Sort expenses by absolute value in descending order
+    this_year_expenses_by_category = dict(sorted(this_year_expenses_by_category.items(), key=lambda x: abs(x[1]), reverse=True))
+    
+    visible_categories = [category for category in this_year_expenses_by_category.keys() if category.visible]
+    chart_data = json.dumps({
+        'labels': [str(category) for category in visible_categories],
+        'values': [float(abs(this_year_expenses_by_category[category])) for category in visible_categories]
+    })
+    
     context = {
         'transactions': transactions,
         'categories': categories,
@@ -30,7 +41,9 @@ def transactions(request):
         'total': sum([transaction.amount for transaction in transactions]),
         'expense_by_category_this_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == datetime.now().month and transaction.date.year == datetime.now().year]) for category in categories},
         'expense_by_category_last_month': {category: sum([transaction.amount for transaction in transactions if transaction.category == category and transaction.date.month == (datetime.now().replace(day=1) - timedelta(days=1)).month and transaction.date.year == (datetime.now().replace(day=1) - timedelta(days=1)).year]) for category in categories},
-        'total_budget': sum([category.budget for category in categories])
+        'total_budget': sum([category.budget for category in categories]),
+        'this_year_expenses_by_category': this_year_expenses_by_category,
+        'chart_data': chart_data
     }
     return render(request, 'transactions.html', context)
 
