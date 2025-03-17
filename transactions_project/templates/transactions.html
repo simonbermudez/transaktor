@@ -11,23 +11,217 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
+            /* Base colors */
             --primary-color: #2c3e50;
             --success-color: #27ae60;
             --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            
+            /* Light theme */
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --hover-color: #f1f3f5;
+            --table-header-bg: #f8f9fa;
+            --table-row-odd: #ffffff;
+            --table-row-even: #f8f9fa;
+            
+            /* Conditional formatting colors - Light theme */
+            --spent-high-bg: rgba(220, 38, 38, 0.2);
+            --spent-medium-bg: rgba(180, 83, 9, 0.2);
+            --spent-low-bg: rgba(33, 150, 83, 0.2);
+            --budget-high-bg: rgba(52, 152, 219, 0.2);
+            --budget-medium-bg: rgba(155, 89, 182, 0.2);
+            --budget-low-bg: rgba(241, 196, 15, 0.2);
+            --remaining-negative-bg: rgba(231, 76, 60, 0.2);
+            --remaining-low-bg: rgba(230, 126, 34, 0.2);
+            --remaining-good-bg: rgba(46, 204, 113, 0.2);
+            --average-high-bg: rgba(52, 152, 219, 0.2);
+            --average-medium-bg: rgba(155, 89, 182, 0.2);
+            --average-low-bg: rgba(241, 196, 15, 0.2);
         }
+        
+        body.dark-mode {
+            /* Dark theme */
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e9ecef;
+            --border-color: #343a40;
+            --hover-color: #2a2a2a;
+            --table-header-bg: #121212;
+            --table-row-odd: #1e1e1e;
+            --table-row-even: #2a2a2a;
+            
+            /* Conditional formatting colors - Dark theme */
+            --spent-high-bg: rgba(220, 38, 38, 0.3);
+            --spent-medium-bg: rgba(180, 83, 9, 0.3);
+            --spent-low-bg: rgba(33, 150, 83, 0.3);
+            --budget-high-bg: rgba(52, 152, 219, 0.3);
+            --budget-medium-bg: rgba(155, 89, 182, 0.3);
+            --budget-low-bg: rgba(241, 196, 15, 0.3);
+            --remaining-negative-bg: rgba(231, 76, 60, 0.3);
+            --remaining-low-bg: rgba(230, 126, 34, 0.3);
+            --remaining-good-bg: rgba(46, 204, 113, 0.3);
+            --average-high-bg: rgba(52, 152, 219, 0.3);
+            --average-medium-bg: rgba(155, 89, 182, 0.3);
+            --average-low-bg: rgba(241, 196, 15, 0.3);
+        }
+        
         body {
-            background-color: #f8f9fa;
-            color: var(--primary-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
-        .red {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger-color);
+        
+        .card, .stat-item, .table-container {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        .green {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
+        
+        .table {
+            color: var(--text-color);
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
         }
+        
+        .table thead {
+            background-color: var(--table-header-bg);
+        }
+        
+        .table tbody tr:nth-of-type(odd) {
+            background-color: var(--table-row-odd);
+        }
+        
+        .table tbody tr:nth-of-type(even) {
+            background-color: var(--table-row-even);
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .form-select, .form-control {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .stat-item h6 {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .stat-item .value {
+            color: var(--primary-color);
+        }
+        
+        .dark-mode .stat-item .value,
+        .dark-mode .card-title,
+        .dark-mode .form-label,
+        .dark-mode .section-title {
+            color: white;
+        }
+        
+        /* Conditional formatting */
+        .spent-high {
+            background-color: var(--spent-high-bg);
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        .spent-medium {
+            background-color: var(--spent-medium-bg);
+            color: #b45309;
+            font-weight: 600;
+        }
+        
+        .spent-low {
+            background-color: var(--spent-low-bg);
+            color: #219653;
+            font-weight: 600;
+        }
+        
+        .budget-high {
+            background-color: var(--budget-high-bg);
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .budget-medium {
+            background-color: var(--budget-medium-bg);
+            color: #d35400;
+            font-weight: 600;
+        }
+        
+        .budget-low {
+            background-color: var(--budget-low-bg);
+            color: #c0392b;
+            font-weight: 600;
+        }
+        
+        .remaining-negative {
+            background-color: var(--remaining-negative-bg);
+            color: #c0392b;
+            font-weight: 600;
+        }
+        
+        .remaining-low {
+            background-color: var(--remaining-low-bg);
+            color: #d35400;
+            font-weight: 600;
+        }
+        
+        .remaining-good {
+            background-color: var(--remaining-good-bg);
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .average-high {
+            background-color: var(--average-high-bg);
+            color: #c0392b;
+            font-weight: 600;
+        }
+        
+        .average-medium {
+            background-color: var(--average-medium-bg);
+            color: #d35400;
+            font-weight: 600;
+        }
+        
+        .average-low {
+            background-color: var(--average-low-bg);
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .dark-mode .section-title {
+            color: var(--info-color);
+        }
+        
+        .table-container {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .dark-mode .table-container {
+            background-color: var(--card-bg);
+        }
+        
         .dashboard-card {
             background: white;
             border-radius: 10px;
@@ -38,25 +232,28 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 15px;
+            margin-bottom: 20px;
         }
         .stat-item {
-            background: white;
-            padding: 1rem;
+            background-color: var(--card-bg);
             border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s ease;
         }
         .stat-item h6 {
-            color: #6c757d;
+            margin-bottom: 8px;
             font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            transition: color 0.3s ease;
         }
         .stat-item .value {
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--primary-color);
+            transition: color 0.3s ease;
         }
         .table-container {
             background: white;
@@ -87,63 +284,63 @@
             outline: none;
         }
         .table td.spent-low {
-            background-color: rgba(39, 174, 96, 0.15) !important;
-            color: #219653 !important;
+            background-color: var(--spent-low-bg);
+            color: #219653;
             font-weight: 600;
         }
         .table td.spent-medium {
-            background-color: rgba(245, 158, 11, 0.15) !important;
-            color: #b45309 !important;
+            background-color: var(--spent-medium-bg);
+            color: #b45309;
             font-weight: 600;
         }
         .table td.spent-high {
-            background-color: rgba(220, 38, 38, 0.15) !important;
-            color: #dc2626 !important;
+            background-color: var(--spent-high-bg);
+            color: #dc2626;
             font-weight: 600;
         }
         .table td.budget-low {
-            background-color: rgba(231, 76, 60, 0.15) !important;
-            color: #c0392b !important;
+            background-color: var(--budget-low-bg);
+            color: #c0392b;
             font-weight: 600;
         }
         .table td.budget-medium {
-            background-color: rgba(241, 196, 15, 0.15) !important;
-            color: #d35400 !important;
+            background-color: var(--budget-medium-bg);
+            color: #d35400;
             font-weight: 600;
         }
         .table td.budget-high {
-            background-color: rgba(39, 174, 96, 0.15) !important;
-            color: #27ae60 !important;
+            background-color: var(--budget-high-bg);
+            color: #27ae60;
             font-weight: 600;
         }
         .table td.remaining-negative {
-            background-color: rgba(231, 76, 60, 0.15) !important;
-            color: #c0392b !important;
+            background-color: var(--remaining-negative-bg);
+            color: #c0392b;
             font-weight: 600;
         }
         .table td.remaining-low {
-            background-color: rgba(241, 196, 15, 0.15) !important;
-            color: #d35400 !important;
+            background-color: var(--remaining-low-bg);
+            color: #d35400;
             font-weight: 600;
         }
         .table td.remaining-good {
-            background-color: rgba(39, 174, 96, 0.15) !important;
-            color: #27ae60 !important;
+            background-color: var(--remaining-good-bg);
+            color: #27ae60;
             font-weight: 600;
         }
         .table td.average-low {
-            background-color: rgba(39, 174, 96, 0.15) !important;
-            color: #27ae60 !important;
+            background-color: var(--average-low-bg);
+            color: #27ae60;
             font-weight: 600;
         }
         .table td.average-medium {
-            background-color: rgba(241, 196, 15, 0.15) !important;
-            color: #d35400 !important;
+            background-color: var(--average-medium-bg);
+            color: #d35400;
             font-weight: 600;
         }
         .table td.average-high {
-            background-color: rgba(231, 76, 60, 0.15) !important;
-            color: #c0392b !important;
+            background-color: var(--average-high-bg);
+            color: #c0392b;
             font-weight: 600;
         }
         .table th {
@@ -170,6 +367,82 @@
             font-size: 10px;
             color: var(--primary-color);
         }
+        
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .dark-mode .card-title {
+            color: white;
+        }
+        
+        .form-label {
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+        
+        .dark-mode .form-label {
+            color: white;
+        }
+        
+        /* Dark mode toggle switch */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-left: 15px;
+        }
+        
+        .theme-switch {
+            display: inline-block;
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .theme-icon {
+            margin-right: 5px;
+            font-size: 18px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -181,6 +454,13 @@
             <a href="/admin" class="btn btn-primary" role="button">
                 <i class="bi bi-gear-fill me-1"></i> Admin
             </a>
+            <div class="theme-switch-wrapper">
+                <i class="bi bi-moon theme-icon"></i>
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-switch">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
         
         <div class="card shadow-sm mb-4">
@@ -305,7 +585,7 @@
                 <h3 class="section-title mb-0">Monthly Categories</h3>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover" id="categories-table">
+                <table class="table table-hover dark-mode-table" id="categories-table">
                     <thead class="table-light">
                         <tr>
                             <th data-sort="string">Category</th>
@@ -762,6 +1042,122 @@
                 header.addEventListener('click', function() {
                     sortColumn(index);
                 });
+            });
+
+            // Dark mode toggle functionality
+            const themeSwitch = document.getElementById('theme-switch');
+            const body = document.body;
+            
+            // Function to update table styles in dark mode
+            function updateDarkModeStyles(isDarkMode) {
+                const table = document.getElementById('categories-table');
+                const tableHeader = table.querySelector('thead');
+                const tableRows = table.querySelectorAll('tbody tr');
+                
+                if (isDarkMode) {
+                    // Apply dark styles to the table and header
+                    table.style.backgroundColor = 'var(--card-bg)';
+                    tableHeader.style.backgroundColor = 'var(--bg-color)';
+                    tableHeader.style.color = 'var(--text-color)';
+                    
+                    // Apply styles to rows but preserve conditional formatting
+                    tableRows.forEach((row, index) => {
+                        // Only set background color on cells without conditional formatting classes
+                        const cells = row.querySelectorAll('td:not(.spent-high):not(.spent-medium):not(.spent-low):not(.budget-high):not(.budget-medium):not(.budget-low):not(.remaining-negative):not(.remaining-low):not(.remaining-good):not(.average-high):not(.average-medium):not(.average-low)');
+                        
+                        cells.forEach(cell => {
+                            if (index % 2 === 0) {
+                                cell.style.backgroundColor = 'var(--card-bg)';
+                            } else {
+                                cell.style.backgroundColor = 'var(--hover-color)';
+                            }
+                            cell.style.color = 'var(--text-color)';
+                        });
+                        
+                        // Enhance conditional formatting in dark mode
+                        const conditionalCells = row.querySelectorAll('.spent-high, .spent-medium, .spent-low, .budget-high, .budget-medium, .budget-low, .remaining-negative, .remaining-low, .remaining-good, .average-high, .average-medium, .average-low');
+                        
+                        conditionalCells.forEach(cell => {
+                            // Increase opacity for better visibility in dark mode
+                            if (cell.classList.contains('spent-high')) {
+                                cell.style.backgroundColor = 'var(--spent-high-bg)';
+                            } else if (cell.classList.contains('spent-medium')) {
+                                cell.style.backgroundColor = 'var(--spent-medium-bg)';
+                            } else if (cell.classList.contains('spent-low')) {
+                                cell.style.backgroundColor = 'var(--spent-low-bg)';
+                            } else if (cell.classList.contains('budget-high')) {
+                                cell.style.backgroundColor = 'var(--budget-high-bg)';
+                            } else if (cell.classList.contains('budget-medium')) {
+                                cell.style.backgroundColor = 'var(--budget-medium-bg)';
+                            } else if (cell.classList.contains('budget-low')) {
+                                cell.style.backgroundColor = 'var(--budget-low-bg)';
+                            } else if (cell.classList.contains('remaining-negative')) {
+                                cell.style.backgroundColor = 'var(--remaining-negative-bg)';
+                            } else if (cell.classList.contains('remaining-low')) {
+                                cell.style.backgroundColor = 'var(--remaining-low-bg)';
+                            } else if (cell.classList.contains('remaining-good')) {
+                                cell.style.backgroundColor = 'var(--remaining-good-bg)';
+                            } else if (cell.classList.contains('average-high')) {
+                                cell.style.backgroundColor = 'var(--average-high-bg)';
+                            } else if (cell.classList.contains('average-medium')) {
+                                cell.style.backgroundColor = 'var(--average-medium-bg)';
+                            } else if (cell.classList.contains('average-low')) {
+                                cell.style.backgroundColor = 'var(--average-low-bg)';
+                            }
+                        });
+                    });
+                } else {
+                    // Remove inline styles to revert to light mode
+                    table.style.backgroundColor = '';
+                    tableHeader.style.backgroundColor = '';
+                    tableHeader.style.color = '';
+                    
+                    tableRows.forEach(row => {
+                        const allCells = row.querySelectorAll('td');
+                        allCells.forEach(cell => {
+                            cell.style.backgroundColor = '';
+                            cell.style.color = '';
+                        });
+                    });
+                }
+            }
+            
+            // Check for saved theme preference or respect OS preference
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+            const savedTheme = localStorage.getItem('theme');
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDarkScheme.matches)) {
+                body.classList.add('dark-mode');
+                themeSwitch.checked = true;
+                updateDarkModeStyles(true);
+            }
+            
+            themeSwitch.addEventListener('change', function() {
+                const isDarkMode = !body.classList.contains('dark-mode');
+                body.classList.toggle('dark-mode');
+                updateDarkModeStyles(isDarkMode);
+                
+                // Save preference to localStorage
+                if (body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+            
+            // Listen for OS theme changes
+            prefersDarkScheme.addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    const isDarkMode = e.matches;
+                    if (isDarkMode) {
+                        body.classList.add('dark-mode');
+                        themeSwitch.checked = true;
+                    } else {
+                        body.classList.remove('dark-mode');
+                        themeSwitch.checked = false;
+                    }
+                    updateDarkModeStyles(isDarkMode);
+                }
             });
         });
     </script>
