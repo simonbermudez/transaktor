@@ -11,9 +11,6 @@
   "host_permissions": [
     "*://*.scotiabank.com/*"
   ],
-  "action": {
-    "default_popup": "popup.html"
-  },
   "content_scripts": [{
     "matches": ["*://*.scotiabank.com/*"],
     "js": [
