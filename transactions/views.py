@@ -337,16 +337,16 @@ def create_transactions(request):
 
     created_transactions = []
     for transaction_data in request.data:
-        transaction_data['user'] = request.user.id
+        user = APIKey.objects.get(key=request.headers['X-Api-Key']).user
+        transaction_data['user'] = user
         try:
             # Try to get existing transaction
-            transaction = Transaction.objects.get(id=transaction_data['id'], user=request.user)
+            transaction = Transaction.objects.get(id=transaction_data['id'], user=user)
             # Update existing transaction
             serializer = TransactionSerializer(transaction, data=transaction_data, partial=True)
         except Transaction.DoesNotExist:
             # Create new transaction
-            serializer = TransactionSerializer(data=transaction_data)
-            
+        serializer = TransactionSerializer(data=transaction_data)
         if serializer.is_valid():
             serializer.save()
             created_transactions.append(serializer.data)
