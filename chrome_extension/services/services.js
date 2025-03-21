@@ -52,6 +52,7 @@ async function uploadToTransaktor(transactions) {
 
         const data = await response.json();
         if (data.created) {
+            alert(`${data.created.length} Transactions uploaded successfully to Transaktor`);
             console.log(`${data.created.length} Transactions uploaded successfully to Transaktor`);
         }
         return data;
