@@ -9,10 +9,11 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.scotiabank.com/*"
+    "https://secure.scotiabank.com/api/credit/*",
+    "https://secure.scotiabank.com/accounts/credit/*"
   ],
   "content_scripts": [{
-    "matches": ["*://*.scotiabank.com/*"],
+    "matches": ["https://www.scotiaonline.scotiabank.com/online/views/accounts/accountDetails/*", "https://secure.scotiabank.com/accounts/credit/*"],
     "js": [
       "utils/functions.js",
       "services/services.js",
