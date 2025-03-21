@@ -53,36 +53,10 @@ INSTALLED_APPS = [
 ]
 
 # CORS Settings
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development mode
-CORS_ALLOWED_ORIGINS = [
-    "https://transaktor.bermudez.ca",
-    "http://192.168.2.227",
-    "https://secure.scotiabank.com",
-]
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'api-key',
-    'referer',
-]
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_METHODS = ['*']
 
 # Custom User Model
 AUTH_USER_MODEL = 'transactions.User'
