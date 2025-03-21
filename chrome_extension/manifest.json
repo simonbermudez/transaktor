@@ -6,13 +6,17 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "webRequest"
   ],
   "host_permissions": [
     "https://secure.scotiabank.com/api/credit/*",
     "https://secure.scotiabank.com/accounts/credit/*",
     "https://transaktor.bermudez.ca/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://transaktor.bermudez.ca https://secure.scotiabank.com;"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -26,15 +30,20 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [{
-    "matches": ["https://www.scotiaonline.scotiabank.com/online/views/accounts/accountDetails/*", "https://secure.scotiabank.com/accounts/credit/*"],
-    "js": [
-      "utils/functions.js",
-      "services/services.js",
-      "banks/scotiabank.js",
-      "content.js"
-    ]
-  }],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.scotiaonline.scotiabank.com/online/views/accounts/accountDetails/*",
+        "https://secure.scotiabank.com/accounts/credit/*"
+      ],
+      "js": [
+        "utils/functions.js",
+        "services/services.js",
+        "banks/scotiabank.js",
+        "content.js"
+      ]
+    }
+  ],
   "background": {
     "service_worker": "background.js"
   }

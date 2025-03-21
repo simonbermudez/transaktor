@@ -5,7 +5,7 @@
 
 // API configuration
 const API_CONFIG = {
-    baseUrl: 'https://transaktor.bermudez.ca',  // Update this with your production URL
+    baseUrl: 'https://transaktor.bermudez.ca',
     endpoints: {
         transactions: '/transactions/upload/',
     }
@@ -39,15 +39,10 @@ async function uploadToTransaktor(transactions) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-Key': apiKey,
-                'Accept': 'application/json',
-                'Origin': chrome.runtime.getURL('')
+                'X-API-Key': apiKey
             },
             mode: 'cors',
-            credentials: "same-origin", // include, *same-origin, omit
-            redirect: "follow", // manual, *follow, error
-            referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(transactions), // body data type must match "Content-Type" header
+            body: JSON.stringify(transactions)
         });
 
         if (!response.ok) {
@@ -55,28 +50,32 @@ async function uploadToTransaktor(transactions) {
             throw new Error(error.message || `HTTP error! status: ${response.status}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        if (data.created) {
+            console.log(`${data.created.length} Transactions uploaded successfully to Transaktor`);
+        }
+        return data;
     } catch (error) {
         console.error('Error uploading transactions:', error);
         throw error;
     }
 }
 
-// Parse date function (kept from original)
 function parseDate(dateStr) {
     const date = new Date(dateStr);
     return date.toISOString().split('T')[0];
 }
 
-window.bankService = {
-    /**
-     * Fetches transactions using the provided bank configuration
-     * @param {Object} config - Bank configuration object containing API and/or scraping methods
-     * @returns {Promise<Array>} Array of standardized transaction objects
-     */
+const bankService = {
     async getTransactions(config) {
         try {
-            // First attempt API method if available and enabled
+            if (!config) {
+                throw new Error('Bank configuration is required');
+            }
+
+            let transactions = [];
+
+            // Try API method first
             if (config.api && config.api.enabled !== false) {
                 try {
                     const path = window.location.pathname;
@@ -85,11 +84,9 @@ window.bankService = {
                     
                     const response = await fetch(endpoint, {
                         method: 'GET',
-                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'X-API-Key': apiKey,
-                            'Origin': chrome.runtime.getURL(''),
                             'Content-Type': 'application/json'
                         },
                         mode: 'cors'
@@ -102,7 +99,7 @@ window.bankService = {
                     const data = await response.json();
                     const transformed = config.api.transformResponse(data);
                     
-                    // Allow bank configs to handle their own response structure
+                    // Handle both array and object responses
                     const transactions = Array.isArray(transformed) ? transformed :
                         [...(transformed.pending || []), ...(transformed.settled || [])];
                     
@@ -137,10 +134,12 @@ window.bankService = {
     }
 };
 
-// Export functions
+// Make services available globally
 window.utils = {
     getApiKey,
     saveApiKey,
     parseDate,
     uploadToTransaktor
 };
+
+window.bankService = bankService;
