@@ -5,7 +5,7 @@ from .models import APIKey
 
 class APIKeyAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        api_key = request.META.get('HTTP_X_API_KEY') or request.query_params.get('api_key')
+        api_key = request.META.get('X-API-Key') or request.query_params.get('api_key')
         if not api_key:
             return None
 
