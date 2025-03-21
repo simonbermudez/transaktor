@@ -15,6 +15,7 @@ import json
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth, TruncDay
 from decimal import Decimal
+import random
 
 # Custom JSON encoder to handle Decimal objects
 class DecimalEncoder(json.JSONEncoder):
@@ -22,6 +23,9 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return float(obj)
         return super(DecimalEncoder, self).default(obj)
+
+def generateRandomColor():
+    return '#%06x' % random.randint(0, 0xFFFFFF)
 
 @login_required
 def transactions(request):
@@ -198,6 +202,71 @@ def transactions(request):
     # Limit to top 8 categories to avoid overcrowding the chart
     category_trends = category_trends[:8]
 
+    # 7. Predictions for next month
+    next_month_date = (datetime.now() + timedelta(days=31)).replace(day=1)
+    next_month_name = next_month_date.strftime('%b %Y')
+    
+    # Calculate predictions for each category based on historical data
+    predictions = []
+    
+    for category in visible_categories:
+        if category.visible:
+            # Get the last 3 months of data for this category to calculate trend
+            recent_months_data = []
+            for i in range(3, 0, -1):
+                month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+                month_expense = sum([
+                    transaction.amount 
+                    for transaction in transactions 
+                    if transaction.category == category
+                    and transaction.date.month == month_date.month 
+                    and transaction.date.year == month_date.year
+                ])
+                recent_months_data.append(float(abs(month_expense)))
+            
+            # Only predict for categories with consistent spending
+            if sum(recent_months_data) > 0:
+                # Simple prediction based on weighted average of last 3 months
+                # Most recent month has highest weight
+                if len(recent_months_data) == 3:
+                    predicted_amount = (recent_months_data[0] * 0.2 + 
+                                       recent_months_data[1] * 0.3 + 
+                                       recent_months_data[2] * 0.5)
+                else:
+                    # If we don't have 3 months of data, use average of available data
+                    predicted_amount = sum(recent_months_data) / len(recent_months_data)
+                
+                # Add seasonal adjustment (if applicable)
+                # Check if we have data from same month last year
+                last_year_month = (next_month_date.replace(year=next_month_date.year-1))
+                last_year_expense = sum([
+                    transaction.amount 
+                    for transaction in transactions 
+                    if transaction.category == category
+                    and transaction.date.month == last_year_month.month 
+                    and transaction.date.year == last_year_month.year
+                ])
+                
+                # If we have data from same month last year, factor it in (30% weight)
+                if abs(last_year_expense) > 0:
+                    predicted_amount = predicted_amount * 0.7 + float(abs(last_year_expense)) * 0.3
+                
+                # Round to 2 decimal places
+                predicted_amount = round(predicted_amount, 2)
+                
+                predictions.append({
+                    'category': str(category),
+                    'predicted': predicted_amount,
+                    'budget': float(category.budget),
+                    'color': generateRandomColor()
+                })
+    
+    # Sort by predicted amount (descending)
+    predictions.sort(key=lambda x: x['predicted'], reverse=True)
+    
+    # Limit to top 10 categories
+    predictions = predictions[:10]
+
     context = {
         'transactions': transactions,
         'categories': categories,
@@ -218,7 +287,10 @@ def transactions(request):
         'top_expenses': json.dumps(top_expenses, cls=DecimalEncoder),
         'savings_data': json.dumps(savings_data, cls=DecimalEncoder),
         'category_trends': json.dumps(category_trends, cls=DecimalEncoder),
-        'month_labels': json.dumps(month_labels)
+        'month_labels': json.dumps(month_labels),
+        # Prediction data
+        'predictions': json.dumps(predictions, cls=DecimalEncoder),
+        'next_month_name': next_month_name
     }
     return render(request, 'transactions.html', context)
 

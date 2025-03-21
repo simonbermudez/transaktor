@@ -627,6 +627,23 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Predicted Expenses for {{ next_month_name }}</h5>
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas id="predictionChart"></canvas>
+                        </div>
+                        <div class="mt-3 small text-muted">
+                            <p class="mb-1"><i class="bi bi-info-circle"></i> Predictions are based on your spending patterns from the last 3 months and seasonal data from last year.</p>
+                            <p class="mb-0"><i class="bi bi-exclamation-triangle"></i> These are estimates and may vary from actual spending.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="table-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3 class="section-title mb-0">Monthly Categories</h3>
@@ -1029,6 +1046,107 @@
                 }
             });
 
+            // New Prediction Chart for Next Month
+            const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+            const predictionsData = JSON.parse('{{ predictions|safe }}');
+            
+            // Prepare data for the chart
+            const predictionLabels = predictionsData.map(item => item.category);
+            const predictedValues = predictionsData.map(item => item.predicted);
+            const budgetValues = predictionsData.map(item => item.budget);
+            const predictionColors = predictionsData.map(item => item.color);
+            
+            new Chart(predictionCtx, {
+                type: 'bar',
+                data: {
+                    labels: predictionLabels,
+                    datasets: [
+                        {
+                            label: 'Predicted Expense',
+                            data: predictedValues,
+                            backgroundColor: predictionColors.map(color => color + 'CC'), // Add some transparency
+                            borderColor: predictionColors,
+                            borderWidth: 1,
+                            order: 2
+                        },
+                        {
+                            label: 'Budget',
+                            data: budgetValues,
+                            backgroundColor: 'rgba(0, 0, 0, 0)', // Transparent background
+                            borderColor: '#2c3e50',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            type: 'line',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return datasetLabel + ': $' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: function(context) {
+                                // Only show data labels for the bar chart (predicted values)
+                                return context.datasetIndex === 0;
+                            },
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: function(value) {
+                                return '$' + value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                            },
+                            color: function(context) {
+                                // Determine if prediction exceeds budget
+                                const index = context.dataIndex;
+                                const predicted = predictedValues[index];
+                                const budget = budgetValues[index];
+                                
+                                if (budget > 0 && predicted > budget) {
+                                    return '#dc2626'; // Red for over budget
+                                }
+                                return '#000000'; // Default black
+                            },
+                            font: {
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+            
             // Table sorting functionality
             const table = document.getElementById('categories-table');
             const headers = table.querySelectorAll('th');
