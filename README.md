@@ -118,3 +118,144 @@ Simon Bermudez - [Website](https://simonbermudez.com)
 ---
 
 Made with ❤️ by Simon Bermudez
+
+## Transaktor Chrome Extension
+
+A Chrome extension for automatically importing bank transactions into Transaktor. Supports multiple banks through a modular architecture with both API and DOM scraping capabilities.
+
+## Features
+
+- Automatic transaction import from supported banks
+- Dual import methods: API and DOM scraping
+- Modular bank configuration system
+- Standardized transaction format
+- Error handling and fallback mechanisms
+- Real-time transaction upload to Transaktor
+
+## Installation
+
+1. Clone this repository
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" in the top right
+4. Click "Load unpacked" and select the `chrome_extension` directory
+
+## Project Structure
+
+```
+chrome_extension/
+├── utils/
+│   └── functions.js      # Core utility functions
+├── services/
+│   └── services.js       # Bank service functions
+├── banks/
+│   └── scotiabank.js     # Bank-specific configurations
+├── content.js            # Main extension script
+└── manifest.json         # Extension configuration
+```
+
+## Adding Support for a New Bank
+
+1. Create a new configuration file in the `banks` directory
+2. Implement the required configuration object:
+
+```javascript
+const bankConfig = {
+    urlPattern: 'bankurl.com',
+    api: {
+        enabled: true,
+        endpoint: (path) => `https://api.bank.com/transactions`,
+        transformResponse: (data) => ({
+            pending: [],
+            settled: []
+        }),
+        transactionMapper: (t) => ({
+            id: '',
+            date: '',
+            description: '',
+            amount: 0,
+            metadata: {},
+            source: 'bankname'
+        })
+    },
+    scraping: {
+        enabled: true,
+        selectors: {
+            accountName: '',
+            transactionTables: '',
+            transactionRow: '',
+            // ... other selectors
+        },
+        transactionMapper: (row, accountName) => ({
+            // ... transaction mapping logic
+        })
+    }
+};
+```
+
+## Transaction Object Format
+
+All bank configurations must map their transactions to this standard format:
+
+```javascript
+{
+    id: string,          // Unique transaction identifier
+    date: string,        // YYYY-MM-DD format
+    description: string, // Transaction description
+    amount: number,      // Negative for debits, positive for credits
+    metadata: Object,    // Bank-specific additional data
+    source: string       // Bank identifier
+}
+```
+
+## Development
+
+### Prerequisites
+
+- Chrome browser
+- Node.js (for development tools)
+- Basic understanding of Chrome extension APIs
+
+### Testing
+
+1. Make changes to the code
+2. Reload the extension in Chrome
+3. Test on supported bank websites
+4. Check the console for errors and debug information
+
+### Best Practices
+
+1. Always implement both API and scraping methods when possible
+2. Use descriptive selectors for DOM scraping
+3. Handle errors gracefully with user feedback
+4. Follow the standardized transaction format
+5. Document new bank configurations thoroughly
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Transactions not importing**
+   - Check if you're on a supported bank page
+   - Verify API endpoints and selectors
+   - Check console for error messages
+
+2. **Extension not loading**
+   - Ensure manifest.json is properly configured
+   - Verify all required files are present
+   - Check file paths in manifest.json
+
+3. **API method failing**
+   - Verify API endpoints are accessible
+   - Check network tab for request/response details
+   - Ensure proper error handling is in place
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+MIT License - See LICENSE file for details
