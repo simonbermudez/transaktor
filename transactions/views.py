@@ -346,7 +346,7 @@ def create_transactions(request):
             serializer = TransactionSerializer(transaction, data=transaction_data, partial=True)
         except Transaction.DoesNotExist:
             # Create new transaction
-        serializer = TransactionSerializer(data=transaction_data)
+            serializer = TransactionSerializer(data=transaction_data)
         if serializer.is_valid():
             serializer.save()
             created_transactions.append(serializer.data)
