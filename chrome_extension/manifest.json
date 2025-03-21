@@ -10,7 +10,8 @@
   ],
   "host_permissions": [
     "https://secure.scotiabank.com/api/credit/*",
-    "https://secure.scotiabank.com/accounts/credit/*"
+    "https://secure.scotiabank.com/accounts/credit/*",
+    "https://transaktor.bermudez.ca/*"
   ],
   "action": {
     "default_popup": "popup.html",
