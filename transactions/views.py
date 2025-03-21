@@ -338,24 +338,88 @@ def create_transactions(request):
     print("API Key:", api_key)
     user = APIKey.objects.get(key=api_key).user
     created_transactions = []
-    for transaction_data in request.data:
-        transaction_data['user_id'] = user.id
-        print(transaction_data)
-        try:
-            # Try to get existing transaction
-            transaction = Transaction.objects.get(id=transaction_data['id'])
-            # Update existing transaction
-            serializer = TransactionSerializer(transaction, data=transaction_data, partial=True)
-        except Transaction.DoesNotExist:
-            # Create new transaction
-            serializer = TransactionSerializer(data=transaction_data)
-        if serializer.is_valid():
-            serializer.save()
-            created_transactions.append(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    new_transactions = []
+    existing_transactions = []
+    transaction_data_map = {}
 
-    return Response(created_transactions, status=status.HTTP_201_CREATED)
+    # Validate required fields in all transactions
+    required_fields = ['id', 'date', 'description', 'amount']
+    for transaction_data in request.data:
+        missing_fields = [field for field in required_fields if field not in transaction_data]
+        if missing_fields:
+            return Response(
+                {'error': f'Missing required fields: {", ".join(missing_fields)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    try:
+        # Separate new and existing transactions
+        existing_ids = set(Transaction.objects.filter(
+            id__in=[t['id'] for t in request.data]
+        ).values_list('id', flat=True))
+
+        for transaction_data in request.data:
+            transaction_data['user_id'] = user.id
+            transaction_id = transaction_data['id']
+            transaction_data_map[transaction_id] = transaction_data
+            
+            if transaction_id in existing_ids:
+                existing_transactions.append(transaction_id)
+            else:
+                new_transactions.append(Transaction(
+                    id=transaction_id,
+                    user_id=user.id,
+                    date=transaction_data['date'],
+                    description=transaction_data['description'],
+                    amount=transaction_data['amount'],
+                    metadata=transaction_data.get('metadata'),
+                    source=transaction_data.get('source')
+                ))
+
+        # Bulk create new transactions
+        if new_transactions:
+            Transaction.objects.bulk_create(new_transactions)
+            created_transactions.extend([{
+                'id': t.id,
+                'user': t.user_id,
+                'date': t.date,
+                'description': t.description,
+                'amount': t.amount,
+                'metadata': t.metadata,
+                'source': t.source
+            } for t in new_transactions])
+
+        # Bulk update existing transactions
+        if existing_transactions:
+            transactions_to_update = Transaction.objects.filter(id__in=existing_transactions)
+            for transaction in transactions_to_update:
+                data = transaction_data_map[transaction.id]
+                transaction.date = data['date']
+                transaction.description = data['description']
+                transaction.amount = data['amount']
+                transaction.metadata = data.get('metadata')
+                transaction.source = data.get('source')
+            
+            Transaction.objects.bulk_update(
+                transactions_to_update,
+                ['date', 'description', 'amount', 'metadata', 'source']
+            )
+            created_transactions.extend([{
+                'id': t.id,
+                'user': t.user_id,
+                'date': t.date,
+                'description': t.description,
+                'amount': t.amount,
+                'metadata': t.metadata,
+                'source': t.source
+            } for t in transactions_to_update])
+
+        return Response(created_transactions, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to process transactions: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(('GET',))
 @authentication_classes([APIKeyAuthentication])
