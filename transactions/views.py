@@ -410,7 +410,7 @@ def create_transactions(request):
                 'metadata': t.metadata,
             } for t in transactions_to_update])
 
-        return Response({"created": created_transactions}, status=status.HTTP_201_CREATED)
+        return Response({"created": new_transactions}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(
             {'error': f'Failed to process transactions: {str(e)}'},
