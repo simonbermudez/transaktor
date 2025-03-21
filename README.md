@@ -46,7 +46,7 @@ A powerful, modern expense tracking and financial analytics application built wi
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/transaktor.git
+git clone https://github.com/simonbermudez/transaktor.git
 cd transaktor
 ```
 
@@ -64,7 +64,7 @@ http://localhost:7346
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/transaktor.git
+git clone https://github.com/simonbermudez/transaktor.git
 cd transaktor
 ```
 
