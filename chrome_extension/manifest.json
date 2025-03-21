@@ -9,7 +9,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*bank*"
+    "*://*.scotiabank.com/*"
   ],
   "action": {
     "default_popup": "popup.html"
