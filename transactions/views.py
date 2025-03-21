@@ -337,7 +337,8 @@ def create_transactions(request):
 
     created_transactions = []
     for transaction_data in request.data:
-        user = APIKey.objects.get(key=request.META.get('X-API-Key')).user
+        api_key = request.META.get('X-API-Key') or request.query_params.get('api_key')
+        user = APIKey.objects.get(key=api_key).user
         transaction_data['user'] = user
         try:
             # Try to get existing transaction

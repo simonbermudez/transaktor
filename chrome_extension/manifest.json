@@ -11,12 +11,8 @@
   ],
   "host_permissions": [
     "https://secure.scotiabank.com/api/credit/*",
-    "https://secure.scotiabank.com/accounts/credit/*",
-    "https://transaktor.bermudez.ca/*"
+    "https://secure.scotiabank.com/accounts/credit/*"
   ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://transaktor.bermudez.ca https://secure.scotiabank.com;"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
