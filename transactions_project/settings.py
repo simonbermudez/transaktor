@@ -54,10 +54,23 @@ INSTALLED_APPS = [
 
 # CORS Settings
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development mode
 CORS_ALLOWED_ORIGINS = [
-    "chrome-extension://*",  # Allow any Chrome extension
     "https://transaktor.bermudez.ca",
     "http://192.168.2.227",
+]
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'api-key',
 ]
 
 # Custom User Model
@@ -163,8 +176,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-
-CORS_ALLOW_ALL_ORIGINS = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
