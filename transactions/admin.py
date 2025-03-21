@@ -61,9 +61,14 @@ class CategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ('budget', )
     search_fields = ('name',)
 
+class APIKeyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'key', 'created_at', 'last_used_at', 'is_active')
+    list_filter = ('is_active', 'created_at', 'last_used_at')
+    search_fields = ('name', 'user__username', 'key')
+    readonly_fields = ('key', 'created_at', 'last_used_at')
+    ordering = ('-created_at',)
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Transaction, TransactionAdmin)
-
-
-
+admin.site.register(APIKey, APIKeyAdmin)
 admin.site.register(Association)
