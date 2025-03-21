@@ -52,6 +52,20 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 ]
 
+# Custom User Model
+AUTH_USER_MODEL = 'transactions.User'
+
+# Django REST Framework Settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'transactions.authentication.APIKeyAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',

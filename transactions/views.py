@@ -1,6 +1,9 @@
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import AuthenticationFailed
 from .models import *
 from .serializers import TransactionSerializer
 from rest_framework import generics
@@ -16,6 +19,7 @@ from django.db.models import Sum
 from django.db.models.functions import TruncMonth, TruncDay
 from decimal import Decimal
 import random
+from django.utils import timezone
 
 # Custom JSON encoder to handle Decimal objects
 class DecimalEncoder(json.JSONEncoder):
@@ -23,6 +27,20 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return float(obj)
         return super(DecimalEncoder, self).default(obj)
+
+class APIKeyAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        api_key = request.META.get('HTTP_X_API_KEY') or request.query_params.get('api_key')
+        if not api_key:
+            return None
+
+        try:
+            api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+            api_key_obj.last_used_at = timezone.now()
+            api_key_obj.save()
+            return (api_key_obj.user, api_key_obj)
+        except (APIKey.DoesNotExist, ValueError):
+            raise AuthenticationFailed('Invalid API key')
 
 def generateRandomColor():
     return '#%06x' % random.randint(0, 0xFFFFFF)
@@ -44,7 +62,12 @@ def transactions(request):
             'label': date.strftime('%B %Y')
         })
 
-    transactions = Transaction.objects.filter(amount__lt=0, category__visible=True).order_by('-date')
+    transactions = Transaction.objects.filter(
+        user=request.user,
+        amount__lt=0, 
+        category__visible=True
+    ).order_by('-date')
+    
     categories = Category.objects.all().order_by('name')
 
     # Calculate expenses for selected month
@@ -136,7 +159,7 @@ def transactions(request):
     top_expenses = top_expenses[:5]  # Get only top 5
     
     # 5. Savings Rate Graph
-    income_transactions = Transaction.objects.filter(amount__gt=0).order_by('-date')
+    income_transactions = Transaction.objects.filter(user=request.user, amount__gt=0).order_by('-date')
     savings_data = []
     
     for i in range(5, -1, -1):
@@ -294,57 +317,44 @@ def transactions(request):
     }
     return render(request, 'transactions.html', context)
 
+class TransactionListView(generics.ListCreateAPIView):
+    serializer_class = TransactionSerializer
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Transaction.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+@api_view(['POST'])
+@authentication_classes([APIKeyAuthentication])
+@permission_classes([IsAuthenticated])
+def create_transactions(request):
+    if not isinstance(request.data, list):
+        return Response({'error': 'Expected a list of transactions'}, status=status.HTTP_400_BAD_REQUEST)
+
+    created_transactions = []
+    for transaction_data in request.data:
+        transaction_data['user'] = request.user.id
+        serializer = TransactionSerializer(data=transaction_data)
+        if serializer.is_valid():
+            serializer.save()
+            created_transactions.append(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(created_transactions, status=status.HTTP_201_CREATED)
+
 @api_view(('GET',))
+@authentication_classes([APIKeyAuthentication])
+@permission_classes([IsAuthenticated])
 def category_tokens(request):
     categories = Category.objects.all()
     tokens = {}
     for category in categories:
-        tokens[category.name] = dict(Counter((" ".join([t.description for t in category.transactions.all()]).split(" "))).most_common())
+        tokens[category.name] = dict(Counter((" ".join([t.description for t in category.transactions.filter(user=request.user).all()]).split(" "))).most_common())
 
     # json response 
     return Response(tokens)
-
-class TransactionListView(generics.ListAPIView):
-    queryset = Transaction.objects.all()
-    serializer_class = TransactionSerializer
-
-@api_view(['POST'])
-def create_transactions(request):
-    if not isinstance(request.data, list):
-        return Response({"error": "Expected a list of transactions"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Assuming 'id' is a unique identifier in each transaction
-    transaction_ids = [transaction['id'] for transaction in request.data]
-    existing_transactions = Transaction.objects.filter(id__in=transaction_ids)
-    existing_ids = set(existing_transactions.values_list('id', flat=True))
-
-    # Filter out the new transactions that don't already exist
-    new_transactions_data = [transaction for transaction in request.data if transaction['id'] not in existing_ids]
-
-    if not new_transactions_data:
-        return Response({"message": "All transactions already exist"}, status=status.HTTP_200_OK)
-
-    successful_transactions = []
-    failed_transactions = []
-
-    # Serialize and save each transaction individually
-    for transaction_data in new_transactions_data:
-        serializer = TransactionSerializer(data=transaction_data)
-        if serializer.is_valid():
-            serializer.save()
-            successful_transactions.append(serializer.data)
-        else:
-            failed_transactions.append({"transaction": transaction_data, "errors": serializer.errors})
-
-    Transaction.cleanup()
-    
-    if successful_transactions:
-        return Response(
-            {
-                "created": successful_transactions,
-                "failed": failed_transactions
-            }, 
-            status=status.HTTP_201_CREATED if not failed_transactions else status.HTTP_207_MULTI_STATUS
-        )
-    else:
-        return Response({"errors": failed_transactions}, status=status.HTTP_400_BAD_REQUEST)

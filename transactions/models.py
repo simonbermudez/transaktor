@@ -4,9 +4,43 @@ from django.db.models import Avg, Count
 from django.utils import timezone
 from decimal import Decimal
 from typing import Optional
+from django.contrib.auth.models import AbstractUser, Group, Permission
+import uuid
+
+class User(AbstractUser):
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='transaction_user_set'
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='transaction_user_set'
+    )
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+
+class APIKey(models.Model):
+    key = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='api_keys')
+    name = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
 
 class Transaction(models.Model):
     id = models.CharField(max_length=250, primary_key=True)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='transactions')
     date = models.DateField()
     description = models.TextField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -17,6 +51,7 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=['date', 'amount']),
             models.Index(fields=['description']),
+            models.Index(fields=['user']),
         ]
 
     def __str__(self):
