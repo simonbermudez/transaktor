@@ -411,7 +411,6 @@ def create_transactions(request):
                 'description': t.description,
                 'amount': t.amount,
                 'metadata': t.metadata,
-                'source': t.source
             } for t in transactions_to_update])
 
         return Response(created_transactions, status=status.HTTP_201_CREATED)
