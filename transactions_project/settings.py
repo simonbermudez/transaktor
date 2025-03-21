@@ -52,6 +52,14 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 ]
 
+# CORS Settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "chrome-extension://*",  # Allow any Chrome extension
+    "https://transaktor.bermudez.ca",
+    "http://192.168.2.227",
+]
+
 # Custom User Model
 AUTH_USER_MODEL = 'transactions.User'
 
