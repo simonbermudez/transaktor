@@ -373,7 +373,6 @@ def create_transactions(request):
                     description=transaction_data['description'],
                     amount=transaction_data['amount'],
                     metadata=transaction_data.get('metadata'),
-                    source=transaction_data.get('source')
                 ))
 
         # Bulk create new transactions
@@ -386,7 +385,6 @@ def create_transactions(request):
                 'description': t.description,
                 'amount': t.amount,
                 'metadata': t.metadata,
-                'source': t.source
             } for t in new_transactions])
 
         # Bulk update existing transactions
@@ -398,11 +396,10 @@ def create_transactions(request):
                 transaction.description = data['description']
                 transaction.amount = data['amount']
                 transaction.metadata = data.get('metadata')
-                transaction.source = data.get('source')
             
             Transaction.objects.bulk_update(
                 transactions_to_update,
-                ['date', 'description', 'amount', 'metadata', 'source']
+                ['date', 'description', 'amount', 'metadata']
             )
             created_transactions.extend([{
                 'id': t.id,
