@@ -406,7 +406,7 @@ def create_transactions(request):
             )
             created_transactions.extend([{
                 'id': t.id,
-                'user': t.user_id,
+                'user_id': user.id,
                 'date': t.date,
                 'description': t.description,
                 'amount': t.amount,
