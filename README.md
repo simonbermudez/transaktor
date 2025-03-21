@@ -1,6 +1,7 @@
 # Transaktor
 
-<img src="https://simonbermudez.com/logo.png" width="200" alt="Transaktor Logo">
+![Transaktor Dashboard](https://raw.githubusercontent.com/simonbermudez/transaktor/main/media/dashboard.png)
+
 
 A powerful, modern expense tracking and financial analytics application built with Django.
 
