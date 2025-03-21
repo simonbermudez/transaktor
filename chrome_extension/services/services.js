@@ -82,15 +82,7 @@ const bankService = {
                     const endpoint = config.api.endpoint(path);
                     const apiKey = await getApiKey();
                     
-                    const response = await fetch(endpoint, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-API-Key': apiKey,
-                            'Content-Type': 'application/json'
-                        },
-                        mode: 'cors'
-                    });
+                    const response = await fetch(endpoint);
 
                     if (!response.ok) {
                         throw new Error(`API request failed: ${response.status}`);
