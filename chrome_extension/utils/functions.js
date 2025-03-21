@@ -40,33 +40,6 @@ const utils = {
      * @param {string} transactions[].source - Source bank identifier
      * @returns {Promise<Object>} Response data from the server
      */
-    async uploadToTransaktor(transactions = {}) {
-        try {
-            const url = "https://transaktor.bermudez.ca/transactions/upload/";
-            const response = await fetch(url, {
-                method: "POST",
-                mode: "cors",
-                cache: "no-cache",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                redirect: "follow",
-                referrerPolicy: "no-referrer",
-                body: JSON.stringify(transactions),
-            });
-
-            const data = await response.json();
-
-            if (data.created) {
-                alert(`${data.created.length} Transactions uploaded successfully to Transaktor`);
-            }
-            return data;
-        } catch (error) {
-            console.error('Error uploading to Transaktor:', error);
-            alert('Failed to upload transactions. Please try again.');
-        }
-    }
 };
 
 // Make utilities available globally
