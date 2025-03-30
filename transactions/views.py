@@ -335,7 +335,6 @@ def create_transactions(request):
     if not isinstance(request.data, list):
         return Response({'error': 'Expected a list of transactions'}, status=status.HTTP_400_BAD_REQUEST)
     api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
-    print("API Key:", api_key)
     user = APIKey.objects.get(key=api_key).user
     created_transactions = []
     new_transactions = []

@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models.functions import Length
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from decimal import Decimal
 from typing import Optional
@@ -98,29 +98,42 @@ class Transaction(models.Model):
         return old_pending_transactions
 
     def check_previous_transaction_category(self):
-        first_word = self.description.split()[0].lower()
+        """
+        Attempts to categorize a transaction by:
+        1. Looking for similar previous transactions
+        2. Falling back to keyword associations
+        """
+        if not self.description:
+            return
+
+        # Get the first two words for better matching
+        words = self.description.lower().split()[:2]
+        search_term = ' '.join(words) if words else ''
         
-        try:
+        if search_term:
+            # Try to find a similar previous transaction
             previous_transaction = (
                 Transaction.objects
-                .filter(description__icontains=first_word)
+                .filter(
+                    Q(description__icontains=search_term) |
+                    Q(description__icontains=words[0] if words else '')
+                )
                 .exclude(id=self.id)
                 .select_related('category')
+                .order_by('-date')  # Get most recent match
                 .first()
             )
             
             if previous_transaction and previous_transaction.category:
                 self.category = previous_transaction.category
-            else:
-                self.category = next(
-                    (assoc.category for assoc in Association.objects.select_related('category')
-                     if assoc.keyword.lower() in self.description.lower()),
-                    None
-                )
-        except IndexError:
-            pass
+                return
 
-        self.check_and_handle_duplicate()
+        # If no similar transaction found, try associations
+        associations = Association.objects.select_related('category')
+        for assoc in associations:
+            if assoc.keyword.lower() in self.description.lower():
+                self.category = assoc.category
+                return
 
     def check_and_handle_duplicate(self):
         try:
