@@ -103,7 +103,7 @@ class Transaction(models.Model):
         1. Looking for similar previous transactions
         2. Falling back to keyword associations
         """
-        if not self.description:
+        if not self.description or self.category:
             return
 
         # Get the first two words for better matching

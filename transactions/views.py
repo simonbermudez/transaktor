@@ -374,42 +374,25 @@ def create_transactions(request):
                     metadata=transaction_data.get('metadata'),
                 ))
 
-        # Bulk create new transactions
+        # Create new transactions one by one to ensure save() method is called
         if new_transactions:
-            Transaction.objects.bulk_create(new_transactions)
-            created_transactions.extend([{
-                'id': t.id,
-                'user': t.user_id,
-                'date': t.date,
-                'description': t.description,
-                'amount': t.amount,
-                'metadata': t.metadata,
-            } for t in new_transactions])
+            for transaction in new_transactions:
+                try:
+                    transaction.save()
+                    created_transactions.append({
+                        'id': transaction.id,
+                        'user': transaction.user_id,
+                        'date': transaction.date,
+                        'description': transaction.description,
+                        'amount': transaction.amount,
+                        'metadata': transaction.metadata,
+                        'category': transaction.category.name if transaction.category else None
+                    })
+                except Exception as e:
+                    print(f"Skipping duplicate transaction {transaction.id}: {str(e)}")
+                    continue
 
-        # Bulk update existing transactions
-        if existing_transactions:
-            transactions_to_update = Transaction.objects.filter(id__in=existing_transactions)
-            for transaction in transactions_to_update:
-                data = transaction_data_map[transaction.id]
-                transaction.date = data['date']
-                transaction.description = data['description']
-                transaction.amount = data['amount']
-                transaction.metadata = data.get('metadata')
-            
-            Transaction.objects.bulk_update(
-                transactions_to_update,
-                ['date', 'description', 'amount', 'metadata']
-            )
-            created_transactions.extend([{
-                'id': t.id,
-                'user_id': user.id,
-                'date': t.date,
-                'description': t.description,
-                'amount': t.amount,
-                'metadata': t.metadata,
-            } for t in transactions_to_update])
-
-        return Response({"created": new_transactions}, status=status.HTTP_201_CREATED)
+        return Response({"created": created_transactions}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(
             {'error': f'Failed to process transactions: {str(e)}'},
