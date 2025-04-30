@@ -20,6 +20,7 @@ from django.db.models.functions import TruncMonth, TruncDay
 from decimal import Decimal
 import random
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 
 # Custom JSON encoder to handle Decimal objects
 class DecimalEncoder(json.JSONEncoder):
@@ -55,8 +56,9 @@ def transactions(request):
 
     # Get last 12 months for the dropdown
     months = []
+    current_date = datetime.now().replace(day=1)
     for i in range(12):
-        date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        date = current_date - relativedelta(months=i)
         months.append({
             'value': date.strftime('%Y-%m'),
             'label': date.strftime('%B %Y')
@@ -103,8 +105,9 @@ def transactions(request):
 
     # 1. Spending Trend Graph - Last 12 months
     trend_data = []
+    current_date = datetime.now().replace(day=1)
     for i in range(11, -1, -1):
-        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_date = current_date - relativedelta(months=i)
         month_expenses = sum([
             transaction.amount 
             for transaction in transactions 
@@ -194,15 +197,16 @@ def transactions(request):
     visible_categories = [category for category in categories if category.visible]
     
     # Get the last 12 months
+    current_date = datetime.now().replace(day=1)
     for i in range(11, -1, -1):
-        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_date = current_date - relativedelta(months=i)
         month_labels.append(month_date.strftime('%b %Y'))
     
     # For each category, get monthly spending for last 12 months
     for category in visible_categories:
         monthly_amounts = []
         for i in range(11, -1, -1):
-            month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+            month_date = current_date - relativedelta(months=i)
             month_expense = sum([
                 transaction.amount 
                 for transaction in transactions 
