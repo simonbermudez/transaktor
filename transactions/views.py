@@ -149,6 +149,75 @@ def transactions(request):
         })
         current_date += timedelta(days=1)
     
+    # Cumulative Daily Expense Graph - Current Month vs Previous Month
+    # Get current date to filter out future days
+    today = datetime.now().date()
+    current_day_of_month = today.day if selected_date.year == today.year and selected_date.month == today.month else 31
+    
+    # Current month cumulative data
+    current_month_cumulative = []
+    current_month_start = selected_date.replace(day=1)
+    current_month_end = (current_month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    days_in_current_month = (current_month_end - current_month_start).days + 1  # Always get all days in month
+    
+    # Previous month data
+    previous_month_date = selected_date - relativedelta(months=1)
+    previous_month_start = previous_month_date.replace(day=1)
+    previous_month_end = (previous_month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    days_in_previous_month = (previous_month_end - previous_month_start).days + 1  # Always get all days in month
+    
+    previous_month_cumulative = []
+    
+    # Calculate cumulative expenses for current month (only up to today if current month)
+    running_total = 0
+    for day in range(1, days_in_current_month + 1):
+        current_date = current_month_start.replace(day=day)
+        
+        # For days up to today, calculate actual expenses
+        if current_date.date() <= today or selected_date.year != today.year or selected_date.month != today.month:
+            day_expenses = sum([
+                transaction.amount 
+                for transaction in transactions 
+                if transaction.date == current_date.date()
+            ])
+            running_total += abs(day_expenses)
+        
+        # Only add data points up to today for current month
+        if current_date.date() <= today or selected_date.year != today.year or selected_date.month != today.month:
+            current_month_cumulative.append({
+                'day': day,
+                'date': current_date.strftime('%d'),
+                'amount': float(running_total)
+            })
+    
+    # Calculate cumulative expenses for previous month (show all days)
+    running_total = 0
+    for day in range(1, days_in_previous_month + 1):
+        current_date = previous_month_start.replace(day=day)
+        day_expenses = sum([
+            transaction.amount 
+            for transaction in transactions 
+            if transaction.date == current_date.date()
+        ])
+        running_total += abs(day_expenses)
+        previous_month_cumulative.append({
+            'day': day,
+            'date': current_date.strftime('%d'),
+            'amount': float(running_total)
+        })
+    
+    # Prepare data for comparison chart
+    cumulative_comparison = {
+        'current_month': {
+            'name': selected_date.strftime('%B %Y'),
+            'data': current_month_cumulative
+        },
+        'previous_month': {
+            'name': previous_month_date.strftime('%B %Y'),
+            'data': previous_month_cumulative
+        }
+    }
+    
     # 4. Top 5 Expenses
     top_expenses = []
     for category in visible_categories:
@@ -315,6 +384,7 @@ def transactions(request):
         'savings_data': json.dumps(savings_data, cls=DecimalEncoder),
         'category_trends': json.dumps(category_trends, cls=DecimalEncoder),
         'month_labels': json.dumps(month_labels),
+        'cumulative_comparison': json.dumps(cumulative_comparison, cls=DecimalEncoder),
         # Prediction data
         'predictions': json.dumps(predictions, cls=DecimalEncoder),
         'next_month_name': next_month_name

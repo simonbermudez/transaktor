@@ -199,6 +199,21 @@
             font-weight: 600;
         }
         
+        /* Chart container styles */
+        .chart-container {
+            height: 400px;
+            width: 100%;
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        
         .section-title {
             color: var(--primary-color);
             font-weight: 600;
@@ -486,6 +501,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0"></script>
 </head>
 <body>
     <div class="container-fluid py-4">
@@ -550,7 +566,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Monthly Expense Distribution</h5>
-                        <div style="height: 400px; position: relative;">
+                        <div class="chart-container">
                             <canvas id="expense_by_category_chart"></canvas>
                         </div>
                     </div>
@@ -560,7 +576,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">12-Month Spending Trend</h5>
-                        <div style="height: 300px;">
+                        <div class="chart-container">
                             <canvas id="spending_trend_chart"></canvas>
                         </div>
                     </div>
@@ -573,7 +589,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Budget vs. Actual Spending</h5>
-                        <div style="height: 300px;">
+                        <div class="chart-container">
                             <canvas id="budget_vs_actual_chart"></canvas>
                         </div>
                     </div>
@@ -583,7 +599,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Daily Spending ({{ selected_month_name }})</h5>
-                        <div style="height: 300px;">
+                        <div class="chart-container">
                             <canvas id="daily_spending_chart"></canvas>
                         </div>
                     </div>
@@ -592,11 +608,24 @@
         </div>
         
         <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Cumulative Daily Expenses: {{ selected_month_name }} vs Previous Month</h5>
+                        <div class="chart-container">
+                            <canvas id="cumulativeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="col-md-6">
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Top 5 Expenses</h5>
-                        <div style="height: 300px;">
+                        <div class="chart-container">
                             <canvas id="top_expenses_chart"></canvas>
                         </div>
                     </div>
@@ -606,7 +635,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">6-Month Savings Rate (%)</h5>
-                        <div style="height: 300px;">
+                        <div class="chart-container">
                             <canvas id="savings_rate_chart"></canvas>
                         </div>
                     </div>
@@ -619,7 +648,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Category Spending Trends (12 Months)</h5>
-                        <div style="height: 400px; position: relative;">
+                        <div class="chart-container">
                             <canvas id="category_trends_chart"></canvas>
                         </div>
                     </div>
@@ -632,7 +661,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Predicted Expenses for {{ next_month_name }}</h5>
-                        <div class="chart-container" style="position: relative; height: 400px;">
+                        <div class="chart-container">
                             <canvas id="predictionChart"></canvas>
                         </div>
                         <div class="mt-3 small text-muted">
@@ -1286,6 +1315,178 @@
                     });
                 }
             }
+            
+            // Cumulative Daily Expense Chart - Current Month vs Previous Month
+            const cumulativeComparisonData = JSON.parse('{{ cumulative_comparison|safe }}');
+            const cumulativeExpenseCtx = document.getElementById('cumulativeExpenseChart').getContext('2d');
+            
+            // Prepare data for the chart
+            const currentMonthData = cumulativeComparisonData.current_month.data.map(item => ({
+                x: item.day,
+                y: item.amount
+            }));
+            
+            const previousMonthData = cumulativeComparisonData.previous_month.data.map(item => ({
+                x: item.day,
+                y: item.amount
+            }));
+            
+            // Add today indicator for current month if applicable
+            const today = new Date();
+            const currentDay = today.getDate();
+            const isCurrentMonth = cumulativeComparisonData.current_month.name.includes(today.getFullYear()) && 
+                                 cumulativeComparisonData.current_month.name.includes(today.toLocaleString('default', { month: 'long' }));
+            
+            // Get max day from the previous month data for x-axis scaling
+            const maxDay = Math.max(...previousMonthData.map(item => item.x));
+            
+            // If we're viewing the current month, add a special data point for today
+            let chartDatasets = [
+                {
+                    label: cumulativeComparisonData.current_month.name + ' (Current)',
+                    data: currentMonthData,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: (context) => {
+                        // Make today's point larger
+                        if (isCurrentMonth && context.dataIndex === currentMonthData.length - 1) {
+                            return 6;
+                        }
+                        return 4;
+                    },
+                    pointBackgroundColor: (context) => {
+                        // Highlight today's point
+                        if (isCurrentMonth && context.dataIndex === currentMonthData.length - 1) {
+                            return '#2ecc71';
+                        }
+                        return '#3498db';
+                    },
+                    pointBorderColor: (context) => {
+                        // Add border to today's point
+                        if (isCurrentMonth && context.dataIndex === currentMonthData.length - 1) {
+                            return '#27ae60';
+                        }
+                        return '#3498db';
+                    },
+                    pointBorderWidth: (context) => {
+                        // Thicker border for today's point
+                        if (isCurrentMonth && context.dataIndex === currentMonthData.length - 1) {
+                            return 2;
+                        }
+                        return 1;
+                    },
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: cumulativeComparisonData.previous_month.name + ' (Complete)',
+                    data: previousMonthData,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#e74c3c',
+                    fill: true,
+                    tension: 0.1,
+                    borderDash: [5, 5]
+                }
+            ];
+            
+            // Create the chart
+            new Chart(cumulativeExpenseCtx, {
+                type: 'line',
+                data: {
+                    datasets: chartDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            right: 25,
+                            bottom: 10,
+                            left: 10
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: isCurrentMonth ? {
+                                todayLine: {
+                                    type: 'line',
+                                    xMin: today.getDate(),
+                                    xMax: today.getDate(),
+                                    borderColor: '#2ecc71',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Today',
+                                        enabled: true,
+                                        position: 'top',
+                                        backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                                        color: 'white',
+                                        font: {
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            } : {}
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return datasetLabel + ': $' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                },
+                                title: function(context) {
+                                    return 'Day ' + context[0].parsed.x;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Cumulative Expense ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: 'Day of Month'
+                            },
+                            min: 1,
+                            max: maxDay, // Show all days in the month
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
             
             // Check for saved theme preference or respect OS preference
             const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
