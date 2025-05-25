@@ -92,7 +92,7 @@ class Transaction(models.Model):
 
 
     @classmethod
-    def remove_old_pending_transactions(cls, older_than_days: int = 5):
+    def remove_old_pending_transactions(cls, older_than_days: int = 0):
         old_pending_transactions = cls.objects.filter(metadata__status="PENDING", date__lt=timezone.now() - timezone.timedelta(days=older_than_days))
         old_pending_transactions.delete()
         return old_pending_transactions

@@ -426,6 +426,9 @@ def create_transactions(request):
             )
 
     try:
+        # Remove pending transactions
+        Transaction.cleanup()
+        
         # Separate new and existing transactions
         existing_ids = set(Transaction.objects.filter(
             id__in=[t['id'] for t in request.data]
