@@ -58,6 +58,15 @@ class Transaction(models.Model):
         return f"{self.date} - {self.description[:50]} - {self.amount}"
     
     @classmethod
+    def debug_metadata_values(cls):
+        """
+        Helper method to inspect the actual values in the metadata field
+        """
+        # Get a sample of records with non-null metadata
+        records = cls.objects.exclude(metadata__isnull=True).values('id', 'metadata')[:10]
+        return list(records)
+        
+    @classmethod
     def cleanup(cls):
         cls.remove_duplicates()
         cls.remove_old_pending_transactions()
@@ -93,10 +102,32 @@ class Transaction(models.Model):
 
     @classmethod
     def remove_old_pending_transactions(cls, older_than_days: int = 0):
-        old_pending_transactions = cls.objects.filter(metadata__status="PENDING", date__lt=timezone.now() - timezone.timedelta(days=older_than_days))
+        old_pending_transactions = cls.objects.filter(
+            metadata__contains={"status": "PENDING"},
+            date__lte=timezone.now() - timezone.timedelta(days=older_than_days)
+        )
         old_pending_transactions.delete()
         return old_pending_transactions
 
+    @classmethod
+    def get_pending_transactions(cls):
+        """
+        Returns all transactions with a PENDING status in metadata
+        """
+        return cls.objects.filter(metadata__contains={"status": "PENDING"})
+    
+    @classmethod
+    def get_pending_transactions_alternative(cls):
+        """
+        Alternative method to get pending transactions that handles null metadata more explicitly
+        """
+        # Filter out null metadata first, then check for status
+        return cls.objects.exclude(metadata__isnull=True).filter(
+            metadata__has_key='status'  # Check if the key exists
+        ).filter(
+            metadata__status="PENDING"  # Then filter by the value
+        )
+        
     def check_previous_transaction_category(self):
         """
         Attempts to categorize a transaction by:
