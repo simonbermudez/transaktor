@@ -776,11 +776,16 @@
             var trendCtx = document.getElementById('spending_trend_chart').getContext('2d');
             var trendData = JSON.parse('{{ trend_data|escapejs }}');
             
+            // Calculate average monthly spending for the past 12 months
+            var totalSpending = trendData.reduce((sum, item) => sum + item.amount, 0);
+            var averageSpending = totalSpending / trendData.length;
+            
             new Chart(trendCtx, {
                 type: 'line',
                 data: {
                     labels: trendData.map(item => item.month),
-                    datasets: [{
+                    datasets: [
+                    {
                         label: 'Monthly Spending',
                         data: trendData.map(item => item.amount),
                         borderColor: 'rgba(75, 192, 192, 1)',
@@ -788,6 +793,17 @@
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4
+                    },
+                    {
+                        label: 'Average Monthly Spending',
+                        data: Array(trendData.length).fill(averageSpending),
+                        borderColor: 'rgba(255, 0, 0, 1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHitRadius: 10
                     }]
                 },
                 options: {
@@ -807,9 +823,14 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
+                                    if (context.dataset.label === 'Average Monthly Spending') {
+                                        return 'Average: $' + averageSpending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    }
                                     return '$' + context.raw.toLocaleString();
                                 }
-                            }
+                            },
+                            intersect: false,
+                            mode: 'nearest'
                         }
                     }
                 }
