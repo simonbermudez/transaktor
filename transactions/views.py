@@ -426,9 +426,6 @@ def create_transactions(request):
             )
 
     try:
-        # Remove pending transactions
-        Transaction.cleanup()
-        
         # Separate new and existing transactions
         existing_ids = set(Transaction.objects.filter(
             id__in=[t['id'] for t in request.data]
@@ -468,7 +465,8 @@ def create_transactions(request):
                 except Exception as e:
                     print(f"Skipping duplicate transaction {transaction.id}: {str(e)}")
                     continue
-
+        # Remove pending transactions
+        Transaction.cleanup()
         return Response({"created": created_transactions}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(

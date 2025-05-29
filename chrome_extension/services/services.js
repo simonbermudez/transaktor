@@ -52,7 +52,8 @@ async function uploadToTransaktor(transactions) {
 
         const data = await response.json();
         if (data.created) {
-            alert(`${data.created.length} Transactions uploaded successfully to Transaktor`);
+            let uncategorizedTransactions = data.created.filter(t => !t.category);
+            alert(`${data.created.length} Transactions uploaded successfully to Transaktor, ${uncategorizedTransactions.length} of them are uncategorized. Please categorize them in Transaktor.`);
             console.log(`${data.created.length} Transactions uploaded successfully to Transaktor`);
         }
         return data;
