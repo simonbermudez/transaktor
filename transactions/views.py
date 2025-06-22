@@ -378,6 +378,24 @@ def transactions(request):
     # Limit to top 10 categories
     predictions = predictions[:10]
 
+    # 8. Top 10 most expensive transactions for the selected month
+    top_expensive_transactions = Transaction.objects.filter(
+        user=request.user,
+        amount__lt=0,  # Only expenses (negative amounts)
+        date__year=selected_date.year,
+        date__month=selected_date.month,
+        category__visible=True
+    ).order_by('amount')[:10]  # Order by amount ascending (since expenses are negative values)
+
+    top_expensive_list = []
+    for transaction in top_expensive_transactions:
+        top_expensive_list.append({
+            'date': transaction.date.strftime('%Y-%m-%d'),
+            'description': transaction.description,
+            'amount': float(abs(transaction.amount)),
+            'category': str(transaction.category) if transaction.category else 'Uncategorized'
+        })
+
     context = {
         'transactions': transactions,
         'categories': categories,
@@ -403,7 +421,9 @@ def transactions(request):
         'cumulative_comparison': json.dumps(cumulative_comparison, cls=DecimalEncoder),
         # Prediction data
         'predictions': json.dumps(predictions, cls=DecimalEncoder),
-        'next_month_name': next_month_name
+        'next_month_name': next_month_name,
+        # Top 10 most expensive transactions
+        'top_expensive_transactions': top_expensive_list
     }
     return render(request, 'transactions.html', context)
 

@@ -673,6 +673,42 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Top 10 Most Expensive Transactions</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover dark-mode-table" id="expensive-transactions-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expensive-transactions-body">
+                                    {% for tx in top_expensive_transactions %}
+                                    <tr>
+                                        <td>{{ tx.date }}</td>
+                                        <td>{{ tx.description }}</td>
+                                        <td>{{ tx.category }}</td>
+                                        <td>${{ tx.amount|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No transactions found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="table-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3 class="section-title mb-0">Monthly Categories</h3>
