@@ -137,17 +137,32 @@ def transactions(request):
     end_date = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
     current_date = start_date
     
+    # For calculating monthly average
+    total_spending_month = 0
+    days_count = 0
+    
     while current_date <= end_date:
         day_expenses = sum([
             transaction.amount 
             for transaction in transactions 
             if transaction.date == current_date.date()
         ])
+        daily_amount = float(abs(day_expenses))
+        
+        # Add to monthly total for average calculation
+        total_spending_month += daily_amount
+        days_count += 1
+        
         daily_spending.append({
             'date': current_date.strftime('%d'),
-            'amount': float(abs(day_expenses))
+            'amount': daily_amount
         })
         current_date += timedelta(days=1)
+    
+    # Calculate daily average for the month
+    daily_average = 0
+    if days_count > 0:
+        daily_average = total_spending_month / days_count
     
     # Cumulative Daily Expense Graph - Current Month vs Previous Month
     # Get current date to filter out future days
@@ -376,6 +391,7 @@ def transactions(request):
         'months': months,
         'selected_date': selected_date.strftime('%Y-%m'),
         'selected_month_name': selected_date.strftime('%B %Y'),
+        'daily_average': daily_average,  # Add daily average for the month
         # New graph data
         'trend_data': json.dumps(trend_data, cls=DecimalEncoder),
         'budget_vs_actual': json.dumps(budget_vs_actual, cls=DecimalEncoder),
