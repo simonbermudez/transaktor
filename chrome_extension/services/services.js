@@ -125,6 +125,31 @@ const bankService = {
             console.error('Error fetching transactions:', error);
             throw error;
         }
+    },
+    async getHistoricalTransactionsDebit() {
+        transactions = [];
+        let cursor = '';
+        let acccount_id = "" // Set your account ID here
+        // fetch transactions and save them to tranzactions
+        while (true) {
+            let response = await fetch(`https://secure.scotiabank.com/api/transactions/deposit-accounts/${acccount_id}?fromDate=2023-06-25&toDate=2025-06-25&cursor=${cursor}`)
+            let data = await response.json();
+            transactions.push(...data.data.map(t => ({
+                id: t.key,
+                date: window.utils.parseDate(t.transactionDate),
+                description: t.description,
+                amount: t.transactionType === "DEBIT" ? -t.transactionAmount.amount : t.transactionAmount.amount,
+                metadata: t,
+                source: 'scotiabank'
+            })));
+            cursor = data.nextCursorKey;
+            console.log(`Fetched ${transactions.length} transactions so far...`);
+            // If no more cursor, break the loop
+            if (!cursor) {
+                break;
+            }
+        }
+        return transactions;
     }
 };
 

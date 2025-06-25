@@ -11,7 +11,8 @@
   ],
   "host_permissions": [
     "https://secure.scotiabank.com/api/credit/*",
-    "https://secure.scotiabank.com/accounts/credit/*"
+    "https://secure.scotiabank.com/accounts/credit/*",
+    "https://secure.scotiabank.com/accounts/chequing/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -30,7 +31,8 @@
     {
       "matches": [
         "https://www.scotiaonline.scotiabank.com/online/views/accounts/accountDetails/*",
-        "https://secure.scotiabank.com/accounts/credit/*"
+        "https://secure.scotiabank.com/accounts/credit/*",
+        "https://secure.scotiabank.com/accounts/chequing/*"
       ],
       "js": [
         "utils/functions.js",

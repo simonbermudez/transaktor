@@ -24,7 +24,18 @@ const scotiabankConfig = {
          * @param {string} path - Current page path
          * @returns {string} Complete API URL
          */
-        endpoint: (path) => `https://secure.scotiabank.com/api/${path.replace('/accounts/', '')}/transactions?limit=300`,
+        endpoint: (path) => {
+            // parse the path and get the last part without query parameters with regex 
+            if (!path) return null;
+            console.log(path);
+            const accountId = path.match(/\/accounts\/(?:credit|chequing)\/([^/?]+)/)[1];
+            console.log(accountId)
+            if (path.includes('chequing')) {
+                return `https://secure.scotiabank.com/api/transactions/deposit-accounts/${accountId}?limit=100`;
+            }
+            // For credit cards, use a different endpoint
+            return `https://secure.scotiabank.com/api/credit/${accountId}/transactions?limit=300`
+        },
 
         /**
          * Transforms API response into standard format
@@ -32,8 +43,8 @@ const scotiabankConfig = {
          * @returns {Object} Transformed data with pending and settled transactions
          */
         transformResponse: (data) => ({
-            pending: data.data.pending,
-            settled: data.data.settled
+            pending: data.data.pending ? data.data.pending : [],
+            settled: data.data.settled ? data.data.settled : data.data
         }),
 
         /**
