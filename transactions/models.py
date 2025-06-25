@@ -55,7 +55,10 @@ class Transaction(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.date} - {self.description[:50]} - {self.amount}"
+        try:
+            return f"{self.date} - {self.transfer.description[:50]} - {self.amount} (Transfer)"
+        except AttributeError:
+            return f"{self.date} - {self.description[:50]} - {self.amount}"
     
     @classmethod
     def cleanup(cls):
@@ -193,5 +196,28 @@ class Transfer(models.Model):
     description = models.TextField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     message = models.TextField(null=True, blank=True)
-    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='transfer')
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='transfer', null=True, blank=True)
     metadata = models.JSONField(null=True, blank=True)
+
+    @classmethod
+    def match_to_transactions(cls):
+        """
+        Matches transfers to transactions based on description and amount.
+        If a transfer matches a transaction, it sets the transaction's transfer field.
+        """
+        transfers = cls.objects.filter(
+            transaction__isnull=True  # Only match transfers that are not already linked)
+        )
+        for transfer in transfers:
+            matching_transactions = Transaction.objects.filter(
+                # match by date including the day before
+                date__range=(transfer.date - timezone.timedelta(days=3), transfer.date + timezone.timedelta(days=3)),
+                amount=transfer.amount,
+                transfer__isnull=True,  # Ensure the transaction is not already linked
+            )
+            if matching_transactions.exists():
+                transaction = matching_transactions.first()
+                transfer.transaction = transaction
+                transaction.description = transfer.description
+                transaction.save(update_fields=['description'])
+                transfer.save(update_fields=['transaction'])

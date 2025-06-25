@@ -546,6 +546,72 @@ def create_transactions(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@api_view(['POST'])
+@authentication_classes([APIKeyAuthentication])
+@permission_classes([IsAuthenticated])
+def create_transfers(request):
+    if not isinstance(request.data, list):
+        return Response({'error': 'Expected a list of transfers'}, status=status.HTTP_400_BAD_REQUEST)
+    api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
+    user = APIKey.objects.get(key=api_key).user
+    created_transfers = []
+    new_transfers = []
+    existing_transfers = []
+    transfer_data_map = {}
+
+    # Validate required fields in all transfers
+    required_fields = ['id', 'date', 'description', 'amount']
+    for transfer_data in request.data:
+        missing_fields = [field for field in required_fields if field not in transfer_data]
+        if missing_fields:
+            return Response(
+                {'error': f'Missing required fields: {", ".join(missing_fields)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    try:
+        # Separate new and existing transfers
+        existing_ids = set(Transfer.objects.filter(
+            id__in=[t['id'] for t in request.data]
+        ).values_list('id', flat=True))
+
+        for transfer_data in request.data:
+            transfer_id = transfer_data['id']
+            transfer_data_map[transfer_id] = transfer_data
+            
+            if transfer_id in existing_ids:
+                existing_transfers.append(transfer_id)
+            else:
+                new_transfers.append(Transfer(
+                    id=transfer_id,
+                    date=transfer_data['date'],
+                    description=transfer_data['description'],
+                    amount=transfer_data['amount'],
+                    metadata=transfer_data.get('metadata'),
+                ))
+
+        # Create new transfers one by one to ensure save() method is called
+        if new_transfers:
+            for transfer in new_transfers:
+                try:
+                    transfer.save()
+                    created_transfers.append({
+                        'id': transfer.id,
+                        'date': transfer.date,
+                        'description': transfer.description,
+                        'amount': transfer.amount,
+                        'metadata': transfer.metadata,
+                    })
+                except Exception as e:
+                    print(f"Skipping duplicate transfer {transfer.id}: {str(e)}")
+                    continue
+        return Response({"created": created_transfers}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to process transfers: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
 @api_view(('GET',))
 @authentication_classes([APIKeyAuthentication])
 @permission_classes([IsAuthenticated])

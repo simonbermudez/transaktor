@@ -54,6 +54,16 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         JSONField: {'widget': JSONEditorWidget},
     }
 
+class TransferAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    list_display = ('date', 'description', 'amount', 'transaction')
+    search_fields = ('date', 'description', 'amount')
+    list_filter = ('date',)
+    ordering = ('-date',)
+
+    formfield_overrides = {
+        JSONField: {'widget': JSONEditorWidget},
+    }
+
 class CategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ('name', 'visible', 'budget')
     search_fields = ('name', 'budget')
@@ -70,5 +80,6 @@ class APIKeyAdmin(admin.ModelAdmin):
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Transaction, TransactionAdmin)
+admin.site.register(Transfer, TransferAdmin)
 admin.site.register(APIKey, APIKeyAdmin)
 admin.site.register(Association)
