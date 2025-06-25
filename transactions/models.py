@@ -185,3 +185,13 @@ class Category(models.Model):
     def average_amount_last_month(self) -> Decimal:
         last_month = timezone.now() - timezone.timedelta(days=30)
         return self.average_amount_for_month(last_month)
+    
+
+class Transfer(models.Model):
+    id = models.CharField(max_length=250, primary_key=True)
+    date = models.DateField()
+    description = models.TextField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.TextField(null=True, blank=True)
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='transfer')
+    metadata = models.JSONField(null=True, blank=True)

@@ -559,6 +559,10 @@
                 <h6>Last 30 Days</h6>
                 <div class="value">${{ total_last_30_days|intcomma }}</div>
             </div>
+            <div class="stat-item">
+                <h6>{{ selected_month_name }} Income</h6>
+                <div class="value">${{ selected_month_income|intcomma }}</div>
+            </div>
         </div>
 
         <div class="row mt-4">
@@ -637,6 +641,19 @@
                         <h5 class="card-title">6-Month Savings Rate (%)</h5>
                         <div class="chart-container">
                             <canvas id="savings_rate_chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Monthly Income (Last 12 Months)</h5>
+                        <div class="chart-container">
+                            <canvas id="monthly_income_chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -1067,6 +1084,47 @@
                             callbacks: {
                                 label: function(context) {
                                     return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Monthly Income Chart
+            var monthlyIncomeCtx = document.getElementById('monthly_income_chart').getContext('2d');
+            var monthlyIncomeData = JSON.parse('{{ monthly_income_data|escapejs }}');
+            
+            new Chart(monthlyIncomeCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyIncomeData.map(item => item.month),
+                    datasets: [{
+                        label: 'Monthly Income',
+                        data: monthlyIncomeData.map(item => item.amount),
+                        backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' + context.raw.toLocaleString();
                                 }
                             }
                         }

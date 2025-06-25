@@ -70,6 +70,24 @@ def transactions(request):
         category__visible=True
     ).order_by('-date')
     
+    # Get income transactions (positive amounts)
+    income_transactions_all = Transaction.objects.filter(
+        user=request.user,
+        amount__gt=0,
+        category__name="Income"  # Assuming income transactions are categorized under "Income"
+    ).order_by('-date')
+
+    income_transactions_this_month = income_transactions_all.filter(
+        date__year=selected_date.year,
+        date__month=selected_date.month
+    )
+    
+    # Calculate total income for the selected month
+    selected_month_income = sum([
+        transaction.amount 
+        for transaction in income_transactions_this_month
+    ])
+    
     categories = Category.objects.all().order_by('name')
 
     # Calculate expenses for selected month
@@ -245,18 +263,24 @@ def transactions(request):
     top_expenses.sort(key=lambda x: x['amount'], reverse=True)
     top_expenses = top_expenses[:5]  # Get only top 5
     
-    # 5. Savings Rate Graph
-    income_transactions = Transaction.objects.filter(user=request.user, amount__gt=0).order_by('-date')
+    # 5. Savings Rate Graph and Monthly Income Graph
     savings_data = []
+    monthly_income_data = []
     
-    for i in range(5, -1, -1):
-        month_date = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+    # Calculate data for both graphs over the last 12 months
+    current_date = datetime.now().replace(day=1)
+    for i in range(11, -1, -1):
+        month_date = current_date - relativedelta(months=i)
+        
+        # Calculate income for this month
         month_income = sum([
             transaction.amount 
-            for transaction in income_transactions 
+            for transaction in income_transactions_all
             if transaction.date.month == month_date.month 
             and transaction.date.year == month_date.year
         ])
+        
+        # Calculate expenses for this month
         month_expenses = abs(sum([
             transaction.amount 
             for transaction in transactions 
@@ -264,14 +288,23 @@ def transactions(request):
             and transaction.date.year == month_date.year
         ]))
         
+        # Add to monthly income graph data
+        monthly_income_data.append({
+            'month': month_date.strftime('%b %Y'),
+            'amount': float(month_income)
+        })
+        
+        # Calculate savings rate
         savings_rate = 0
         if month_income > 0:
             savings_rate = ((month_income - month_expenses) / month_income) * 100
             
-        savings_data.append({
-            'month': month_date.strftime('%b %Y'),
-            'rate': round(float(savings_rate), 1)
-        })
+        # Only add to savings data if it's in the last 6 months (to maintain original functionality)
+        if i >= 6:  # This will give us the most recent 6 months
+            savings_data.append({
+                'month': month_date.strftime('%b %Y'),
+                'rate': round(float(savings_rate), 1)
+            })
 
     # 6. Category Spending Trends - Last 12 months
     category_trends = []
@@ -403,6 +436,7 @@ def transactions(request):
         'total_this_month': sum([transaction.amount for transaction in transactions if transaction.date.month == selected_date.month and transaction.date.year == selected_date.year]), 
         'total_this_year': sum([transaction.amount for transaction in transactions if transaction.date.year == datetime.now().year]),
         'total': sum([transaction.amount for transaction in transactions]),
+        'selected_month_income': selected_month_income,  # Add income for the selected month
         'expense_by_category': selected_month_expenses,
         'total_budget': sum([category.budget for category in categories]),
         'chart_data': json.dumps(monthly_chart_data, cls=DecimalEncoder),
@@ -416,6 +450,7 @@ def transactions(request):
         'daily_spending': json.dumps(daily_spending, cls=DecimalEncoder),
         'top_expenses': json.dumps(top_expenses, cls=DecimalEncoder),
         'savings_data': json.dumps(savings_data, cls=DecimalEncoder),
+        'monthly_income_data': json.dumps(monthly_income_data, cls=DecimalEncoder),
         'category_trends': json.dumps(category_trends, cls=DecimalEncoder),
         'month_labels': json.dumps(month_labels),
         'cumulative_comparison': json.dumps(cumulative_comparison, cls=DecimalEncoder),
@@ -423,7 +458,8 @@ def transactions(request):
         'predictions': json.dumps(predictions, cls=DecimalEncoder),
         'next_month_name': next_month_name,
         # Top 10 most expensive transactions
-        'top_expensive_transactions': top_expensive_list
+        'top_expensive_transactions': top_expensive_list,
+        'total_income': selected_month_income  # Add total income for the month
     }
     return render(request, 'transactions.html', context)
 
