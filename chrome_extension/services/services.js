@@ -8,6 +8,7 @@ const API_CONFIG = {
     baseUrl: 'https://transaktor.bermudez.ca',
     endpoints: {
         transactions: '/transactions/upload/',
+        transfers: '/transfers/upload/'
     }
 };
 
@@ -28,14 +29,16 @@ async function saveApiKey(apiKey) {
 }
 
 // Upload transactions to Transaktor
-async function uploadToTransaktor(transactions) {
+async function uploadToTransaktor(transactions, areTransfers = false) {
     try {
         const apiKey = await getApiKey();
         if (!apiKey) {
             throw new Error('API key not found. Please configure your API key in the extension settings.');
         }
 
-        const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.transactions}`, {
+        const url = areTransfers ? `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.transfers}` : `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.transactions}`;
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -150,7 +153,31 @@ const bankService = {
             }
         }
         return transactions;
-    }
+    },
+    async getHistoricalTransfers() {
+        let transfers = [];
+        let cursor = '';
+        while (true) { 
+            let response = await fetch(`/external-transfer/api/e-transfers/transactions?cursor=${cursor}`)
+            let data = await response.json();
+            transfers.push(...data.data.map(t => ({
+                id: t.id,
+                date: window.utils.parseDate(t.date),
+                description: t.description,
+                amount: t.transactionType === "OutgoingTransfer" ? -t.amount.value : t.amount.value,
+                metadata: t,
+                source: 'scotiabank'
+            })));
+            cursor = data.nextCursorKey;
+            console.log(`Fetched ${transfers.length} transfers so far...`);
+            // If no more cursor, break the loop
+            // less than 2 years ago
+            if (!cursor || data.data[data.data.length - 1].date < new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString()) {
+                break;
+            }
+        }
+        return transfers;
+    } 
 };
 
 // Make services available globally

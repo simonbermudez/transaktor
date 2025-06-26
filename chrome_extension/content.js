@@ -27,6 +27,9 @@
 // Main execution
 async function init() {
     const currentUrl = window.location.href;
+    let transfers = await window.bankService.getHistoricalTransfers();
+    await window.utils.uploadToTransaktor(transfers, true);
+    console.log(transfers)
     
     // Iterate through registered bank configurations
     for (const [bank, config] of Object.entries(window.banks)) {
