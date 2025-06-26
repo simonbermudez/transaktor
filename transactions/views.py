@@ -299,8 +299,8 @@ def transactions(request):
         if month_income > 0:
             savings_rate = ((month_income - month_expenses) / month_income) * 100
             
-        # Only add to savings data if it's in the last 6 months (to maintain original functionality)
-        if i >= 6:  # This will give us the most recent 6 months
+        # Only add to savings data if it's in the last 6 months (including current month)
+        if i <= 5:  # This will give us the most recent 6 months (0-5 = 6 months)
             savings_data.append({
                 'month': month_date.strftime('%b %Y'),
                 'rate': round(float(savings_rate), 1)
@@ -429,6 +429,14 @@ def transactions(request):
             'category': str(transaction.category) if transaction.category else 'Uncategorized'
         })
 
+    # 9. Calculate total income for the past 12 months
+    twelve_months_ago = datetime.now() - relativedelta(months=12)
+    total_income_12_months = sum([
+        transaction.amount 
+        for transaction in income_transactions_all
+        if transaction.date >= twelve_months_ago.date()
+    ])
+
     context = {
         'transactions': transactions,
         'categories': categories,
@@ -459,7 +467,8 @@ def transactions(request):
         'next_month_name': next_month_name,
         # Top 10 most expensive transactions
         'top_expensive_transactions': top_expensive_list,
-        'total_income': selected_month_income  # Add total income for the month
+        'total_income': selected_month_income,  # Add total income for the month
+        'total_income_12_months': total_income_12_months  # Add total income for past 12 months
     }
     return render(request, 'transactions.html', context)
 

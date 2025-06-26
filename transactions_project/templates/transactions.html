@@ -548,20 +548,24 @@
                 <div class="value">${{ total_budget|intcomma }}</div>
             </div>
             <div class="stat-item">
-                <h6>Total This Calendar Year</h6>
-                <div class="value">${{ total_this_year|intcomma }}</div>
-            </div>
-            <div class="stat-item">
-                <h6>{{ selected_month_name }} Total</h6>
+                <h6>{{ selected_month_name }} Total Spent</h6>
                 <div class="value">${{ total_this_month|intcomma }}</div>
             </div>
             <div class="stat-item">
-                <h6>{{ selected_month_name }} Income</h6>
+                <h6>{{ selected_month_name }} Total Income</h6>
                 <div class="value">${{ selected_month_income|intcomma }}</div>
             </div>
             <div class="stat-item">
-                <h6>Last 30 Days</h6>
+                <h6>Total Spent Last 30 Days</h6>
                 <div class="value">${{ total_last_30_days|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Total Spent This Year</h6>
+                <div class="value">${{ total_this_year|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <h6>Total Income Past 12 Months</h6>
+                <div class="value">${{ total_income_12_months|intcomma }}</div>
             </div>
         </div>
 
@@ -1095,17 +1099,39 @@
             var monthlyIncomeCtx = document.getElementById('monthly_income_chart').getContext('2d');
             var monthlyIncomeData = JSON.parse('{{ monthly_income_data|escapejs }}');
             
+            // Calculate average income for the red line
+            var totalIncome = monthlyIncomeData.reduce((sum, item) => sum + item.amount, 0);
+            var averageIncome = totalIncome / monthlyIncomeData.length;
+            
             new Chart(monthlyIncomeCtx, {
                 type: 'bar',
                 data: {
                     labels: monthlyIncomeData.map(item => item.month),
-                    datasets: [{
-                        label: 'Monthly Income',
-                        data: monthlyIncomeData.map(item => item.amount),
-                        backgroundColor: 'rgba(46, 204, 113, 0.7)',
-                        borderColor: 'rgba(46, 204, 113, 1)',
-                        borderWidth: 1
-                    }]
+                    datasets: [
+                        {
+                            label: 'Monthly Income',
+                            data: monthlyIncomeData.map(item => item.amount),
+                            backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1,
+                            order: 2
+                        },
+                        {
+                            label: 'Average Income (12 Months)',
+                            data: Array(monthlyIncomeData.length).fill(averageIncome),
+                            type: 'line',
+                            borderColor: 'rgba(220, 38, 38, 1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            pointHitRadius: 10,
+                            fill: false,
+                            borderDash: [5, 5],
+                            order: 1,
+                            spanGaps: true,
+                            tension: 0
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -1124,9 +1150,14 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
+                                    if (context.dataset.label === 'Average Income (12 Months)') {
+                                        return 'Average: $' + averageIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    }
                                     return context.dataset.label + ': $' + context.raw.toLocaleString();
                                 }
-                            }
+                            },
+                            intersect: false,
+                            mode: 'nearest'
                         }
                     }
                 }
