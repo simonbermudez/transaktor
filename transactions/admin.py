@@ -7,6 +7,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django.db.models import Sum 
 from django.contrib.admin import SimpleListFilter
+from djangoql.schema import DjangoQLSchema, StrField
 
 @admin.action(description='Remove duplicates (keeps first entry)')
 def remove_duplicates(modeladmin, request, queryset=None):
@@ -35,8 +36,23 @@ class CategoryListFilter(SimpleListFilter):
             return queryset.filter(category=self.value())
         return queryset
 
+class StatusField(StrField):
+    model = Transaction     
+    name = 'status'         
+
+    def get_lookup_name(self):
+        return 'metadata__status'
+    
+
+class TransactionQLSchema(DjangoQLSchema):
+    def get_fields(self, model):
+        if model is Transaction:
+            return super().get_fields(model) + [StatusField()]
+        return super().get_fields(model)
+
 class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    list_display = ('date', 'description', 'amount', 'category')
+    djangoql_schema = TransactionQLSchema
+    list_display = ('date', 'description', 'amount', 'status', 'category')
     search_fields = ('date', 'description', 'amount')
     list_filter = ('date', CategoryListFilter)
     list_editable = ('category',)
@@ -44,6 +60,15 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     ordering = ('-date',)
     actions = [remove_duplicates, remove_old_pending_transactions]
     allow_empty_actions = True
+
+    @admin.display(
+        ordering="metadata__status",              # makes the column sortable
+        description="Status",                   # column header
+    )
+    def status(self, obj):
+        # Gracefully handle missing keys
+        status = obj.metadata.get("status")
+        return status if status else "SETTLED"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "category":
