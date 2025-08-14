@@ -63,12 +63,13 @@ class TransactionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
     @admin.display(
         ordering="metadata__status",              # makes the column sortable
-        description="Status",                   # column header
+        description="Settled?",
+        boolean=True
     )
     def status(self, obj):
         # Gracefully handle missing keys
-        status = obj.metadata.get("status")
-        return status if status else "SETTLED"
+        status = obj.metadata.get("status") or "SETTLED"
+        return True if status == "SETTLED" else False
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "category":
